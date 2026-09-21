@@ -623,7 +623,6 @@ if (error) {
       renderEntregas();
     }
   }
-}
 
 async function renderEntregas() {
   const body = document.getElementById("tablaEntregasBody");
@@ -1561,3 +1560,10 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     });
 });
+
+// Actualización automática cada 3 segundos
+setInterval(() => {
+  if (typeof renderEntregas === 'function') {
+    renderEntregas();
+  }
+}, 3000);
