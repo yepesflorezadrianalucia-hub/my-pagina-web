@@ -1563,7 +1563,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
 // Actualización automática cada 3 segundos
 setInterval(() => {
+  if (typeof cargarDashboard === 'function') {
+    cargarDashboard();
+  }
   if (typeof renderEntregas === 'function') {
     renderEntregas();
-  } 
+  }
 }, 3000);
