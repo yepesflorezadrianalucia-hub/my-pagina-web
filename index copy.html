@@ -1,0 +1,921 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Control de Dotación</title>
+    <link rel="stylesheet" href="estilos.css">
+</head>
+
+<body>
+
+    <!-- ================= LOGIN ================= -->
+    <section id="pantallaLogin" class="pantalla-login">
+
+        <div class="contenedor-login">
+
+            <div class="icono-login">👕</div>
+
+            <h1>Control de Dotación</h1>
+            <p>Inicia sesión para continuar</p>
+
+            <form id="loginForm">
+
+                <div class="campo-login">
+                    <label for="usuario">Usuario</label>
+                    <input type="text" id="usuario" placeholder="Ingrese su usuario" required>
+                </div>
+
+                <div class="campo-login">
+                    <label for="password">Contraseña</label>
+
+                    <div class="password-contenedor">
+                        <input type="password" id="password" placeholder="Ingrese su contraseña" required>
+                        <button type="button" id="mostrarPassword">👁️</button>
+                    </div>
+                </div>
+
+                <button type="submit" class="boton-login">
+                    Iniciar sesión
+                </button>
+
+                <p id="mensaje" class="mensaje"></p>
+
+            </form>
+
+        </div>
+
+    </section>
+
+
+    <!-- ================= DASHBOARD ================= -->
+    <section id="dashboard" class="dashboard oculto">
+
+        <!-- BARRA LATERAL -->
+        <aside class="barra-lateral">
+
+            <div class="logo">
+                <span>👕</span>
+                <div>
+                    <strong>Control</strong>
+                    <small>de Dotación</small>
+                </div>
+            </div>
+
+            <nav class="menu">
+
+                <button class="menu-item activo" data-seccion="inicio">
+                    🏠 Inicio
+                </button>
+
+                <button class="menu-item" data-seccion="empleados">
+                    👥 Empleados
+                </button>
+
+                <button class="menu-item" data-seccion="dotacion">
+                    📦 Dotación
+                </button>
+
+                <button class="menu-item" data-seccion="historial">
+                    📋 Historial
+                </button>
+
+                <button class="menu-item" data-seccion="reportes">
+                    📊 Reportes
+                </button>
+
+                <button class="menu-item" data-seccion="configuracion">
+                    ⚙️ Configuración
+                </button>
+
+            </nav>
+
+            <button id="cerrarSesion" class="boton-salir">
+                🚪 Cerrar sesión
+            </button>
+
+        </aside>
+
+
+        <!-- CONTENIDO PRINCIPAL -->
+        <main class="contenido-principal">
+
+            <!-- ================= INICIO ================= -->
+            <section id="seccionInicio" class="seccion">
+
+                <div class="encabezado-seccion">
+                    <div>
+                        <h2>Dashboard</h2>
+                        <p>Resumen del sistema de control de dotación.</p>
+                    </div>
+                </div>
+
+
+                <div class="tarjetas-estadisticas">
+
+                    <div class="tarjeta">
+                        <div class="tarjeta-icono">👥</div>
+                        <div>
+                            <span>Total empleados</span>
+                            <strong id="totalEmpleados">0</strong>
+                        </div>
+                    </div>
+
+                    <div class="tarjeta">
+                        <div class="tarjeta-icono">📦</div>
+                        <div>
+                            <span>Total entregas</span>
+                            <strong id="totalEntregas">0</strong>
+                        </div>
+                    </div>
+
+                    <div class="tarjeta">
+                        <div class="tarjeta-icono">⏳</div>
+                        <div>
+                            <span>Entregas pendientes</span>
+                            <strong id="totalPendientes">0</strong>
+                        </div>
+                    </div>
+
+                    <div class="tarjeta">
+                        <div class="tarjeta-icono">📅</div>
+                        <div>
+                            <span>Entregas este mes</span>
+                            <strong id="entregasMes">0</strong>
+                        </div>
+                    </div>
+
+                </div>
+
+
+                <div class="panel bienvenida">
+
+                    <h3>Bienvenido al sistema 👋</h3>
+
+                    <p>
+                        Desde este sistema podrás administrar los empleados,
+                        registrar entregas de dotación, consultar el historial
+                        y generar reportes.
+                    </p>
+
+                </div>
+
+            </section>
+
+
+            <!-- ================= EMPLEADOS ================= -->
+            <section id="seccionEmpleados" class="seccion oculto">
+
+                <div class="encabezado-seccion">
+
+                    <div>
+                        <h2>👥 Empleados</h2>
+                        <p>Administra la información de los empleados.</p>
+                    </div>
+
+                    <button id="nuevoEmpleado" class="boton-principal">
+                        ➕ Nuevo empleado
+                    </button>
+
+                </div>
+
+
+                <div class="panel buscador-panel">
+
+                    <input
+                        type="text"
+                        id="buscarEmpleado"
+                        class="buscador"
+                        placeholder="🔎 Buscar por nombre, código o cédula..."
+                    >
+
+                </div>
+
+
+                <!-- FORMULARIO EMPLEADO -->
+                <div id="formularioEmpleado" class="panel formulario-empleado oculto">
+
+                    <h3 id="tituloFormulario">Nuevo empleado</h3>
+
+                    <form id="formEmpleado">
+
+                        <div class="grid-formulario">
+
+                            <div class="campo-formulario">
+                                <label for="codigoEmpleado">Código empleado *</label>
+                                <input type="text" id="codigoEmpleado" required>
+                            </div>
+
+                            <div class="campo-formulario">
+                                <label for="nombreEmpleado">Nombre completo *</label>
+                                <input type="text" id="nombreEmpleado" required>
+                            </div>
+
+                            <div class="campo-formulario">
+                                <label for="cedulaEmpleado">Cédula *</label>
+                                <input type="text" id="cedulaEmpleado" required>
+                            </div>
+
+                            <div class="campo-formulario">
+                                <label for="cargoEmpleado">Cargo</label>
+                                <input type="text" id="cargoEmpleado">
+                            </div>
+
+                            <div class="campo-formulario">
+                                <label for="areaEmpleado">Área</label>
+                                <input type="text" id="areaEmpleado">
+                            </div>
+
+                            <div class="campo-formulario">
+                                <label for="tallaCamisa">Talla camisa</label>
+                                <select id="tallaCamisa">
+                                    <option value="">Seleccionar</option>
+                                    <option>XS</option>
+                                    <option>S</option>
+                                    <option>M</option>
+                                    <option>L</option>
+                                    <option>XL</option>
+                                    <option>XXL</option>
+                                </select>
+                            </div>
+
+                            <div class="campo-formulario">
+                                <label for="tallaPantalon">Talla pantalón</label>
+                                <select id="tallaPantalon">
+                                    <option value="">Seleccionar</option>
+                                    <option>28</option>
+                                    <option>30</option>
+                                    <option>32</option>
+                                    <option>34</option>
+                                    <option>36</option>
+                                    <option>38</option>
+                                    <option>40</option>
+                                    <option>42</option>
+                                    <option>44</option>
+                                </select>
+                            </div>
+
+                            <div class="campo-formulario">
+                                <label for="tallaCalzado">Talla calzado</label>
+                                <select id="tallaCalzado">
+                                    <option value="">Seleccionar</option>
+                                    <option>35</option>
+                                    <option>36</option>
+                                    <option>37</option>
+                                    <option>38</option>
+                                    <option>39</option>
+                                    <option>40</option>
+                                    <option>41</option>
+                                    <option>42</option>
+                                    <option>43</option>
+                                    <option>44</option>
+                                </select>
+                            </div>
+
+                            <div class="campo-formulario">
+                                <label for="estadoEmpleado">Estado</label>
+                                <select id="estadoEmpleado">
+                                    <option value="Activo">Activo</option>
+                                    <option value="Inactivo">Inactivo</option>
+                                </select>
+                            </div>
+
+                            <div class="campo-formulario campo-completo">
+                                <label for="fotoEmpleado">Foto del empleado</label>
+                                <input type="file" id="fotoEmpleado" accept="image/*">
+                            </div>
+
+                            <div class="campo-formulario campo-completo">
+                                <label for="observacionesEmpleado">Observaciones</label>
+                                <textarea id="observacionesEmpleado" rows="3"></textarea>
+                            </div>
+
+                        </div>
+
+                        <div class="botones-formulario">
+
+                            <button type="submit" class="boton-principal">
+                                💾 Guardar empleado
+                            </button>
+
+                            <button type="button" id="cancelarEmpleado" class="boton-cancelar">
+                                Cancelar
+                            </button>
+
+                        </div>
+
+                    </form>
+
+                </div>
+
+
+                <!-- TABLA EMPLEADOS -->
+                <div class="panel tabla-panel">
+
+                    <div class="tabla-contenedor">
+
+                        <table>
+
+                            <thead>
+                                <tr>
+                                    <th>Código</th>
+                                    <th>Empleado</th>
+                                    <th>Cédula</th>
+                                    <th>Cargo</th>
+                                    <th>Área</th>
+                                    <th>Tallas</th>
+                                    <th>Estado</th>
+                                    <th>Acciones</th>
+                                </tr>
+                            </thead>
+
+                            <tbody id="tablaEmpleados"></tbody>
+
+                        </table>
+
+                    </div>
+
+                </div>
+
+            </section>
+
+
+            <!-- ================= DOTACIÓN ================= -->
+            <section id="seccionDotacion" class="seccion oculto">
+
+                <div class="encabezado-seccion">
+
+                    <div>
+                        <h2>📦 Control de Dotación</h2>
+                        <p>Registra cada entrega realizada a los empleados.</p>
+                    </div>
+
+                    <button id="nuevaEntrega" class="boton-principal">
+                        ➕ Nueva entrega
+                    </button>
+
+                </div>
+
+
+                <!-- FORMULARIO DE ENTREGA -->
+                <div id="formularioEntrega" class="panel formulario-empleado oculto">
+
+                    <h3 id="tituloEntrega">Nueva entrega</h3>
+
+                    <form id="formEntrega">
+
+                        <div class="grid-formulario">
+
+                            <div class="campo-formulario campo-completo">
+                                <label for="empleadoEntrega">👤 Seleccionar empleado *</label>
+
+                                <select id="empleadoEntrega" required>
+                                    <option value="">Seleccione un empleado</option>
+                                </select>
+                            </div>
+
+
+                            <div class="campo-formulario">
+                                <label for="elementoEntrega">👕 Elemento *</label>
+
+                                <select id="elementoEntrega" required>
+
+                                    <option value="">Seleccione un elemento</option>
+
+                                    <option value="Camisas Administrativas">
+                                        👕 Camisas Administrativas
+                                    </option>
+
+                                    <option value="Camisa Manga Larga - Ventas">
+                                        👔 Camisa Manga Larga - Ventas
+                                    </option>
+
+                                    <option value="Camisilla">
+                                        👚 Camisilla
+                                    </option>
+
+                                    <option value="Suéter">
+                                        🧥 Suéter
+                                    </option>
+
+                                    <option value="Buso">
+                                        🧥 Buso
+                                    </option>
+
+                                    <option value="Pantalones">
+                                        👖 Pantalones
+                                    </option>
+
+                                    <option value="Botas">
+                                        👞 Botas
+                                    </option>
+
+                                    <option value="Otros elementos">
+                                        ➕ Otros elementos
+                                    </option>
+
+                                </select>
+
+                            </div>
+
+
+                            <div class="campo-formulario" id="campoOtroElemento">
+                                <label for="otroElemento">Nombre del otro elemento</label>
+                                <input
+                                    type="text"
+                                    id="otroElemento"
+                                    placeholder="Ej: Gorra, chaleco..."
+                                >
+                            </div>
+
+
+                            <div class="campo-formulario">
+                                <label for="cantidadEntrega">📦 Cantidad *</label>
+
+                                <input
+                                    type="number"
+                                    id="cantidadEntrega"
+                                    min="1"
+                                    value="1"
+                                    required
+                                >
+                            </div>
+
+
+                            <div class="campo-formulario">
+                                <label for="tallaEntrega">📏 Talla *</label>
+
+                                <input
+                                    type="text"
+                                    id="tallaEntrega"
+                                    placeholder="Ej: M, 32, 40"
+                                    required
+                                >
+                            </div>
+
+
+                            <div class="campo-formulario">
+                                <label for="fechaEntrega">📅 Fecha de entrega *</label>
+
+                                <input
+                                    type="date"
+                                    id="fechaEntrega"
+                                    required
+                                >
+                            </div>
+
+
+                            <div class="campo-formulario">
+                                <label for="estadoEntrega">Estado *</label>
+
+                                <select id="estadoEntrega" required>
+
+                                    <option value="Entregado">
+                                        ✅ Entregado
+                                    </option>
+
+                                    <option value="Pendiente">
+                                        ⏳ Pendiente
+                                    </option>
+
+                                </select>
+
+                            </div>
+
+
+                            <div class="campo-formulario campo-completo">
+
+                                <label for="evidenciaEntrega">
+                                    📷 Evidencia de entrega
+                                </label>
+
+                                <input
+                                    type="file"
+                                    id="evidenciaEntrega"
+                                    accept="image/*"
+                                >
+
+                                <small>
+                                    Puede cargar una fotografía como evidencia de esta entrega.
+                                </small>
+
+                            </div>
+
+
+                            <div class="campo-formulario campo-completo">
+
+                                <label for="observacionesEntrega">
+                                    📝 Observaciones
+                                </label>
+
+                                <textarea
+                                    id="observacionesEntrega"
+                                    rows="4"
+                                    placeholder="Escriba alguna observación..."
+                                ></textarea>
+
+                            </div>
+
+                        </div>
+
+
+                        <div class="botones-formulario">
+
+                            <button type="submit" class="boton-principal">
+                                💾 Guardar entrega
+                            </button>
+
+                            <button
+                                type="button"
+                                id="cancelarEntrega"
+                                class="boton-cancelar"
+                            >
+                                Cancelar
+                            </button>
+
+                        </div>
+
+                    </form>
+
+                </div>
+
+
+                <!-- BUSCADOR DE ENTREGAS -->
+                <div class="panel buscador-panel">
+
+                    <input
+                        type="text"
+                        id="buscarEntrega"
+                        class="buscador"
+                        placeholder="🔎 Buscar entrega por empleado, elemento, talla o estado..."
+                    >
+
+                </div>
+
+
+                <!-- TABLA DE ENTREGAS -->
+                <div class="panel tabla-panel">
+
+                    <div class="tabla-contenedor">
+
+                        <table>
+
+                            <thead>
+
+                                <tr>
+                                    <th>Empleado</th>
+                                    <th>Elemento</th>
+                                    <th>Cantidad</th>
+                                    <th>Talla</th>
+                                    <th>Fecha</th>
+                                    <th>Estado</th>
+                                    <th>Evidencia</th>
+                                    <th>Observaciones</th>
+                                    <th>Acciones</th>
+                                </tr>
+
+                            </thead>
+
+                            <tbody id="tablaEntregas"></tbody>
+
+                        </table>
+
+                    </div>
+
+                </div>
+
+            </section>
+
+
+            <!-- ================= HISTORIAL ================= -->
+            <section id="seccionHistorial" class="seccion oculto">
+
+                <div class="encabezado-seccion">
+
+                    <div>
+                        <h2>📋 Historial de entregas</h2>
+                        <p>Consulta todas las entregas registradas.</p>
+                    </div>
+
+                </div>
+
+                <div class="panel">
+
+                    <p>
+                        El historial mostrará todas las entregas registradas
+                        individualmente.
+                    </p>
+
+                    <button id="irDotacion" class="boton-principal">
+                        📦 Ir a Dotación
+                    </button>
+
+                </div>
+
+            </section>
+
+
+            <!-- ================= REPORTES ================= -->
+           <!-- ================= REPORTES ================= -->
+<section id="seccionReportes" class="seccion oculto">
+
+    <div class="encabezado-seccion">
+
+        <div>
+            <h2>📊 Reportes</h2>
+
+            <p>
+                Consulta, filtra y genera reportes de dotación.
+            </p>
+        </div>
+
+    </div>
+
+
+    <!-- ================= FILTROS ================= -->
+
+    <div class="panel">
+
+        <h3>🔎 Filtros del reporte</h3>
+
+        <div class="grid-formulario">
+
+            <div class="campo-formulario">
+
+                <label for="reporteBuscar">
+                    Empleado, código o elemento
+                </label>
+
+                <input
+                    type="text"
+                    id="reporteBuscar"
+                    placeholder="Ej: Juan, 001, camisa..."
+                >
+
+            </div>
+
+
+            <div class="campo-formulario">
+
+                <label for="reporteEstado">
+                    Estado
+                </label>
+
+                <select id="reporteEstado">
+
+                    <option value="">
+                        Todos los estados
+                    </option>
+
+                    <option value="Entregado">
+                        Entregado
+                    </option>
+
+                    <option value="Pendiente">
+                        Pendiente
+                    </option>
+
+                </select>
+
+            </div>
+
+
+            <div class="campo-formulario">
+
+                <label for="reporteFechaInicio">
+                    Fecha inicial
+                </label>
+
+                <input
+                    type="date"
+                    id="reporteFechaInicio"
+                >
+
+            </div>
+
+
+            <div class="campo-formulario">
+
+                <label for="reporteFechaFin">
+                    Fecha final
+                </label>
+
+                <input
+                    type="date"
+                    id="reporteFechaFin"
+                >
+
+            </div>
+
+        </div>
+
+
+        <div class="botones-formulario">
+
+            <button
+                type="button"
+                class="boton-principal"
+                id="actualizarReporte"
+            >
+                🔄 Actualizar reporte
+            </button>
+
+
+            <button
+                type="button"
+                class="boton-cancelar"
+                id="limpiarReporte"
+            >
+                🧹 Limpiar filtros
+            </button>
+
+        </div>
+
+    </div>
+
+
+    <!-- ================= RESUMEN ================= -->
+
+    <div class="tarjetas-estadisticas">
+
+        <div class="tarjeta">
+
+            <div class="tarjeta-icono">
+                📦
+            </div>
+
+            <div>
+
+                <span>
+                    Entregas encontradas
+                </span>
+
+                <strong id="reporteTotalEntregas">
+                    0
+                </strong>
+
+            </div>
+
+        </div>
+
+
+        <div class="tarjeta">
+
+            <div class="tarjeta-icono">
+                ✅
+            </div>
+
+            <div>
+
+                <span>
+                    Entregadas
+                </span>
+
+                <strong id="reporteEntregadas">
+                    0
+                </strong>
+
+            </div>
+
+        </div>
+
+
+        <div class="tarjeta">
+
+            <div class="tarjeta-icono">
+                ⏳
+            </div>
+
+            <div>
+
+                <span>
+                    Pendientes
+                </span>
+
+                <strong id="reportePendientes">
+                    0
+                </strong>
+
+            </div>
+
+        </div>
+
+
+        <div class="tarjeta">
+
+            <div class="tarjeta-icono">
+                👥
+            </div>
+
+            <div>
+
+                <span>
+                    Empleados
+                </span>
+
+                <strong id="reporteEmpleados">
+                    0
+                </strong>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- ================= BOTONES ================= -->
+
+    <div class="panel">
+
+        <div
+            style="
+                display:flex;
+                gap:10px;
+                flex-wrap:wrap;
+                margin-bottom:20px;
+            "
+        >
+
+            <button
+                type="button"
+                class="boton-principal"
+                id="descargarReporte"
+            >
+                📥 Descargar CSV
+            </button>
+
+
+            <button
+                type="button"
+                class="boton-principal"
+                id="imprimirReporte"
+            >
+                🖨️ Imprimir reporte
+            </button>
+
+        </div>
+
+
+        <!-- ================= TABLA ================= -->
+
+        <div class="tabla-contenedor">
+
+            <table id="tablaReporte">
+
+                <thead>
+
+                    <tr>
+
+                        <th>
+                            Código
+                        </th>
+
+                        <th>
+                            Empleado
+                        </th>
+
+                        <th>
+                            Elemento
+                        </th>
+
+                        <th>
+                            Cantidad
+                        </th>
+
+                        <th>
+                            Talla
+                        </th>
+
+                        <th>
+                            Fecha
+                        </th>
+
+                        <th>
+                            Estado
+                        </th>
+
+                        <th>
+                            Evidencia
+                        </th>
+
+                        <th>
+                            Observaciones
+                        </th>
+
+                    </tr>
+
+                </thead>
+
+
+                <tbody id="tablaReporteBody">
+
+                </tbody>
+
+            </table>
+
+        </div>
+
+    </div>
+
+</section>

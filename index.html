@@ -1,0 +1,4911 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Control-Dotación</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+
+:root{
+    --azul:#2563eb;
+    --azul-oscuro:#12355b;
+    --azul-claro:#eff6ff;
+    --verde:#22c55e;
+    --amarillo:#f59e0b;
+    --rojo:#ef4444;
+    --morado:#8b5cf6;
+    --fondo:#f4f7fb;
+    --blanco:#fff;
+    --texto:#12355b;
+    --gris:#64748b;
+    --borde:#dce5ef;
+    --sombra:0 8px 25px rgba(15,23,42,.06);
+}
+
+body{
+    font-family:Inter,Arial,Helvetica,sans-serif;
+    background:var(--fondo);
+    color:var(--texto);
+}
+
+button,input,select,textarea{font:inherit}
+
+button{cursor:pointer}
+
+.oculto{display:none!important}
+
+/* LOGIN */
+.pantalla-login{
+    min-height:100vh;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    flex-direction:column;
+    padding:30px;
+    background:linear-gradient(135deg,#eef5ff,#f8fafc);
+}
+
+.login-marca{text-align:center;margin-bottom:25px}
+
+.logo-circulo{
+    width:75px;height:75px;
+    display:flex;align-items:center;justify-content:center;
+    margin:auto auto 15px;
+    border-radius:22px;
+    background:var(--azul);
+    font-size:36px;
+}
+
+.login-marca h1{font-size:28px;color:var(--azul-oscuro)}
+.login-marca p{color:var(--gris);margin-top:5px}
+
+.login-card{
+    width:100%;
+    max-width:430px;
+    padding:32px;
+    background:white;
+    border:1px solid var(--borde);
+    border-radius:20px;
+    box-shadow:var(--sombra);
+}
+
+.login-header{margin-bottom:25px}
+.login-header h2{margin-bottom:7px}
+.login-header p{color:var(--gris)}
+
+.campo{margin-bottom:16px}
+
+.campo label{
+    display:block;
+    margin-bottom:7px;
+    font-weight:600;
+    font-size:14px;
+}
+
+.campo input,
+.campo select,
+.campo textarea{
+    width:100%;
+    border:1px solid var(--borde);
+    border-radius:10px;
+    padding:12px 14px;
+    background:#fff;
+    color:var(--texto);
+    outline:none;
+}
+
+.campo input:focus,
+.campo select:focus,
+.campo textarea:focus{
+    border-color:var(--azul);
+    box-shadow:0 0 0 3px rgba(37,99,235,.08);
+}
+
+.campo-icono{position:relative}
+.campo-icono span{
+    position:absolute;
+    left:13px;
+    top:11px;
+}
+.campo-icono input{padding-left:40px}
+.btn-ojo{
+    position:absolute;
+    right:8px;
+    top:7px;
+    border:0;
+    background:transparent;
+}
+
+.login-opciones{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    font-size:13px;
+    margin-bottom:20px;
+}
+
+.recordarme{display:flex;gap:7px;align-items:center}
+
+.btn-link{
+    border:0;background:none;color:var(--azul);
+}
+
+.btn-login,
+.btn-principal{
+    border:0;
+    background:var(--azul);
+    color:white;
+    padding:12px 18px;
+    border-radius:11px;
+    font-weight:700;
+    transition:.2s;
+}
+
+.btn-login{
+    width:100%;
+    display:flex;
+    gap:10px;
+    justify-content:center;
+}
+
+.btn-login:hover,
+.btn-principal:hover{background:#1d4ed8}
+
+.btn-secundario{
+    background:white;
+    color:var(--texto);
+    border:1px solid var(--borde);
+    padding:11px 16px;
+    border-radius:10px;
+    font-weight:600;
+}
+
+.btn-secundario:hover{background:#f8fafc}
+
+.mensaje-login{
+    margin-top:15px;
+    text-align:center;
+    color:var(--rojo);
+    min-height:20px;
+}
+
+.login-pie{
+    color:var(--gris);
+    font-size:13px;
+    margin-top:22px;
+}
+
+/* DASHBOARD */
+.dashboard{
+    min-height:100vh;
+    display:flex;
+}
+
+.sidebar{
+    width:250px;
+    min-height:100vh;
+    background:#fff;
+    border-right:1px solid var(--borde);
+    padding:22px 15px;
+    position:fixed;
+    left:0;
+    top:0;
+    bottom:0;
+    display:flex;
+    flex-direction:column;
+    z-index:20;
+}
+
+.sidebar-marca{
+    display:flex;
+    gap:10px;
+    align-items:center;
+    padding:5px 10px 20px;
+}
+
+.sidebar-logo{
+    width:45px;height:45px;
+    display:flex;align-items:center;justify-content:center;
+    border-radius:13px;
+    background:var(--azul-claro);
+    font-size:23px;
+}
+
+.sidebar-marca strong{
+    display:block;
+    font-size:13px;
+    line-height:17px;
+}
+
+.sidebar-marca small{
+    display:block;
+    color:var(--gris);
+    margin-top:3px;
+}
+
+.sidebar-separador{
+    height:1px;
+    background:var(--borde);
+    margin-bottom:18px;
+}
+
+.menu-titulo{
+    color:#94a3b8;
+    font-size:11px;
+    font-weight:800;
+    padding:10px 12px;
+    letter-spacing:.6px;
+}
+
+.menu-item{
+    width:100%;
+    border:0;
+    background:transparent;
+    padding:12px;
+    border-radius:10px;
+    display:flex;
+    gap:12px;
+    align-items:center;
+    color:#64748b;
+    text-align:left;
+    margin-bottom:3px;
+}
+
+.menu-item:hover{background:#f1f5f9;color:var(--texto)}
+
+.menu-item.activo{
+    background:var(--azul-claro);
+    color:var(--azul);
+    font-weight:700;
+}
+
+.menu-icono{width:22px;text-align:center}
+
+.sidebar-inferior{
+    margin-top:auto;
+}
+
+.perfil-sidebar{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    padding:14px 10px;
+    border-top:1px solid var(--borde);
+}
+
+.perfil-avatar,
+.usuario-avatar{
+    width:42px;height:42px;
+    background:var(--azul);
+    color:#fff;
+    border-radius:50%;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-weight:800;
+}
+
+.perfil-info strong,
+.perfil-info span{
+    display:block;
+}
+.perfil-info span{font-size:12px;color:var(--gris)}
+
+.btn-cerrar-sesion{
+    width:100%;
+    border:1px solid var(--borde);
+    background:#fff;
+    border-radius:10px;
+    padding:10px;
+    color:#64748b;
+}
+
+.contenido{
+    margin-left:250px;
+    width:calc(100% - 250px);
+    min-height:100vh;
+    padding:20px 25px 50px;
+}
+
+.header-principal{
+    min-height:80px;
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    border-bottom:1px solid var(--borde);
+    margin-bottom:40px;
+}
+
+.header-titulo{
+    display:flex;
+    align-items:center;
+    gap:15px;
+}
+
+.saludo-pequeno{
+    color:#94a3b8;
+    font-size:12px;
+    font-weight:800;
+    text-transform:uppercase;
+}
+
+.header-titulo h1{
+    font-size:27px;
+    margin-top:4px;
+}
+
+.header-acciones{
+    display:flex;
+    align-items:center;
+    gap:14px;
+}
+
+.busqueda-global{
+    width:375px;
+    position:relative;
+}
+
+.busqueda-global input{
+    width:100%;
+    height:48px;
+    border:1px solid var(--borde);
+    border-radius:12px;
+    padding:0 48px 0 40px;
+    outline:none;
+}
+
+.busqueda-global>span{
+    position:absolute;
+    left:13px;
+    top:13px;
+}
+
+.busqueda-global button{
+    position:absolute;
+    right:5px;
+    top:5px;
+    height:38px;
+    width:42px;
+    border:0;
+    border-radius:9px;
+    background:var(--azul);
+    color:#fff;
+}
+
+.notificaciones-contenedor{position:relative}
+
+.btn-notificaciones{
+    width:50px;height:50px;
+    border:1px solid var(--borde);
+    border-radius:12px;
+    background:#fff;
+    position:relative;
+    font-size:20px;
+}
+
+.contador-notificaciones{
+    position:absolute;
+    top:-6px;
+    right:-4px;
+    background:var(--rojo);
+    color:#fff;
+    font-size:11px;
+    border-radius:20px;
+    padding:3px 6px;
+}
+
+.usuario-header{
+    display:flex;
+    align-items:center;
+    gap:10px;
+}
+
+.usuario-header strong,
+.usuario-header span{
+    display:block;
+}
+.usuario-header span{font-size:12px;color:var(--gris)}
+
+.seccion{display:none}
+.seccion.activa{display:block}
+
+.seccion-encabezado{
+    display:flex;
+    justify-content:space-between;
+    align-items:flex-end;
+    margin-bottom:25px;
+}
+
+.etiqueta-seccion{
+    color:var(--azul);
+    font-size:12px;
+    font-weight:800;
+    letter-spacing:.5px;
+}
+
+.seccion-encabezado h2{
+    font-size:30px;
+    margin:6px 0;
+}
+
+.seccion-encabezado p{color:var(--gris)}
+
+.estadisticas-grid{
+    display:grid;
+    grid-template-columns:repeat(4,1fr);
+    gap:20px;
+    margin-bottom:28px;
+}
+
+.tarjeta-estadistica{
+    background:#fff;
+    border:1px solid var(--borde);
+    border-radius:16px;
+    padding:25px;
+    display:flex;
+    gap:18px;
+    align-items:center;
+    box-shadow:var(--sombra);
+}
+
+.estadistica-icono{
+    width:62px;height:62px;
+    border-radius:15px;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    font-size:27px;
+}
+
+.estadistica-icono.azul{background:#eff6ff}
+.estadistica-icono.verde{background:#ecfdf5}
+.estadistica-icono.amarillo{background:#fffbeb}
+.estadistica-icono.morado{background:#f5f3ff}
+
+.estadistica-contenido span,
+.estadistica-contenido small{
+    display:block;
+}
+.estadistica-contenido span{color:#64748b;font-size:14px}
+.estadistica-contenido strong{
+    display:block;
+    font-size:31px;
+    margin:4px 0;
+}
+.estadistica-contenido small{color:#94a3b8;font-size:12px}
+
+.graficas-grid{
+    display:grid;
+    grid-template-columns:1.6fr 1fr;
+    gap:22px;
+    margin-bottom:28px;
+}
+
+.panel-grafica,
+.panel-tabla,
+.panel-filtros,
+.inventario-panel{
+    background:#fff;
+    border:1px solid var(--borde);
+    border-radius:16px;
+    box-shadow:var(--sombra);
+}
+
+.panel-grafica{padding:26px}
+
+.panel-titulo{
+    display:flex;
+    justify-content:space-between;
+}
+
+.panel-titulo h3{font-size:18px}
+.panel-titulo p{color:var(--gris);font-size:13px;margin-top:5px}
+
+.icono-panel{
+    background:var(--azul-claro);
+    width:46px;height:46px;
+    display:flex;align-items:center;justify-content:center;
+    border-radius:12px;
+}
+
+.grafica-area{
+    height:270px;
+    display:flex;
+    align-items:flex-end;
+    gap:15px;
+    padding:30px 10px 10px;
+}
+
+.barra{
+    flex:1;
+    background:linear-gradient(to top,#2563eb,#60a5fa);
+    border-radius:8px 8px 2px 2px;
+    min-height:8px;
+    position:relative;
+}
+
+.barra span{
+    position:absolute;
+    bottom:-24px;
+    width:100%;
+    text-align:center;
+    color:#64748b;
+    font-size:11px;
+}
+
+.barra strong{
+    position:absolute;
+    top:-20px;
+    width:100%;
+    text-align:center;
+    font-size:11px;
+}
+
+.dona-area{
+    min-height:270px;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    gap:25px;
+}
+
+.dona{
+    width:180px;height:180px;
+    border-radius:50%;
+    background:conic-gradient(#2563eb 0 25%,#22c55e 25% 50%,#f59e0b 50% 75%,#8b5cf6 75%);
+    position:relative;
+}
+
+.dona:after{
+    content:"";
+    position:absolute;
+    width:95px;height:95px;
+    background:#fff;
+    border-radius:50%;
+    left:42px;top:42px;
+}
+
+.leyenda-grafica div{
+    margin:8px 0;
+    font-size:12px;
+}
+
+.punto{
+    width:10px;height:10px;
+    border-radius:50%;
+    display:inline-block;
+    margin-right:7px;
+}
+
+.panel-tabla{overflow:hidden}
+
+.panel-tabla-header{
+    padding:25px;
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+}
+
+.panel-tabla-header h3{margin:5px 0}
+.panel-tabla-header p{color:var(--gris);font-size:13px}
+
+.tabla-responsive{overflow:auto}
+
+table{
+    width:100%;
+    border-collapse:collapse;
+    min-width:800px;
+}
+
+th{
+    background:#f8fafc;
+    color:#475569;
+    font-size:12px;
+    text-transform:uppercase;
+    text-align:left;
+    padding:15px;
+    border-bottom:1px solid var(--borde);
+}
+
+td{
+    padding:15px;
+    border-bottom:1px solid #edf2f7;
+    font-size:13px;
+}
+
+tr:hover td{background:#fafcff}
+
+.estado{
+    padding:5px 9px;
+    border-radius:20px;
+    font-size:11px;
+    font-weight:700;
+}
+
+.estado.entregado,
+.estado.activo,
+.estado.disponible{
+    color:#15803d;
+    background:#dcfce7;
+}
+
+.estado.pendiente,
+.estado.bajo{
+    color:#a16207;
+    background:#fef3c7;
+}
+
+.estado.agotado,
+.estado.inactivo{
+    color:#b91c1c;
+    background:#fee2e2;
+}
+
+.acciones{
+    display:flex;
+    gap:5px;
+}
+
+.btn-mini{
+    border:1px solid var(--borde);
+    background:white;
+    width:32px;height:32px;
+    border-radius:7px;
+}
+
+.btn-mini:hover{background:#eff6ff}
+
+/* BARRAS */
+.barra-herramientas{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    margin-bottom:20px;
+}
+
+.campo-busqueda{
+    width:600px;
+    position:relative;
+}
+
+.campo-busqueda span{
+    position:absolute;
+    left:14px;
+    top:12px;
+}
+
+.campo-busqueda input{
+    width:100%;
+    padding:13px 15px 13px 42px;
+    border:1px solid var(--borde);
+    border-radius:11px;
+    outline:none;
+}
+
+.contador-registros{color:var(--gris)}
+.contador-registros strong{color:var(--texto)}
+
+.resumen-dotacion{
+    display:grid;
+    grid-template-columns:repeat(3,1fr);
+    gap:18px;
+    margin-bottom:22px;
+}
+
+.resumen-dotacion>div{
+    background:#fff;
+    border:1px solid var(--borde);
+    border-radius:15px;
+    padding:20px;
+    display:flex;
+    align-items:center;
+    gap:15px;
+}
+
+.resumen-dotacion>div>span{font-size:26px}
+.resumen-dotacion strong,
+.resumen-dotacion small{display:block}
+.resumen-dotacion strong{font-size:27px}
+.resumen-dotacion small{font-size:12px;color:var(--gris)}
+
+/* INVENTARIO */
+.inventario-panel{
+    margin-top:28px;
+    overflow:hidden;
+}
+
+.inventario-header{
+    padding:25px;
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    border-bottom:1px solid var(--borde);
+}
+
+.inventario-header h3{
+    font-size:22px;
+    margin:5px 0;
+}
+
+.inventario-header p{
+    color:var(--gris);
+    font-size:13px;
+}
+
+.inventario-stats{
+    display:grid;
+    grid-template-columns:repeat(3,1fr);
+    gap:18px;
+    padding:0 0;
+}
+
+.inventario-stat{
+    padding:22px;
+    display:flex;
+    gap:15px;
+    align-items:center;
+    border-right:1px solid var(--borde);
+}
+
+.inventario-stat:last-child{border-right:0}
+
+.inventario-stat .icon{
+    width:45px;height:45px;
+    border-radius:12px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-size:22px;
+    background:#eff6ff;
+}
+
+.inventario-stat strong,
+.inventario-stat small{display:block}
+
+.inventario-stat strong{font-size:28px}
+.inventario-stat small{color:var(--gris)}
+
+.tabla-inventario th,
+.tabla-inventario td{padding:15px 18px}
+
+.inventario-filtros{display:grid;grid-template-columns:2fr 1fr 1fr 1fr;gap:14px;padding:20px;border-bottom:1px solid var(--borde);background:#fafcff}
+.inventario-filtros .campo{margin-bottom:0}
+.inventario-filtros input,.inventario-filtros select{width:100%;border:1px solid var(--borde);border-radius:10px;padding:11px 12px;background:#fff;color:var(--texto);outline:none}
+.inventario-filtros input:focus,.inventario-filtros select:focus{border-color:var(--azul);box-shadow:0 0 0 3px rgba(37,99,235,.08)}
+.badge-genero{display:inline-flex;align-items:center;gap:5px;padding:5px 9px;border-radius:20px;font-size:11px;font-weight:700}
+.badge-genero.mujer{background:#fdf2f8;color:#be185d}
+.badge-genero.hombre{background:#eff6ff;color:#1d4ed8}
+.badge-genero.unisex{background:#f1f5f9;color:#475569}
+.talla-inventario{font-weight:800;display:inline-flex;min-width:38px;justify-content:center;padding:6px 9px;border-radius:8px;background:#f8fafc;border:1px solid var(--borde)}
+@media(max-width:900px){.inventario-filtros{grid-template-columns:1fr 1fr}}
+
+.stock-numero{font-weight:800}
+
+.stock-control{
+    display:flex;
+    align-items:center;
+    gap:7px;
+}
+
+.btn-stock{
+    width:30px;height:30px;
+    border:1px solid var(--borde);
+    border-radius:7px;
+    background:#fff;
+    font-weight:800;
+}
+
+.btn-stock:hover{
+    background:var(--azul);
+    color:#fff;
+}
+
+.stock-bajo-row td{background:#fffdf5}
+
+/* FILTROS */
+.panel-filtros{
+    padding:20px;
+    display:grid;
+    grid-template-columns:2fr 1fr 1fr 1fr auto;
+    gap:14px;
+    align-items:end;
+    margin-bottom:22px;
+}
+
+/* MODAL */
+.modal{
+    position:fixed;
+    inset:0;
+    background:rgba(15,23,42,.55);
+    z-index:100;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding:20px;
+}
+
+.modal-contenido{
+    background:#fff;
+    width:100%;
+    max-width:850px;
+    max-height:90vh;
+    overflow:auto;
+    border-radius:18px;
+    box-shadow:0 20px 60px rgba(0,0,0,.2);
+}
+
+.modal-header{
+    padding:23px 25px;
+    border-bottom:1px solid var(--borde);
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+}
+
+.btn-cerrar-modal{
+    border:0;
+    background:#f1f5f9;
+    width:36px;height:36px;
+    border-radius:8px;
+    font-size:22px;
+}
+
+#formEmpleado,
+#formEntrega,
+#formInventario{
+    padding:25px;
+}
+
+.form-grid{
+    display:grid;
+    grid-template-columns:repeat(2,1fr);
+    gap:0 18px;
+}
+
+.campo-ancho{grid-column:1/-1}
+
+.modal-botones{
+    display:flex;
+    justify-content:flex-end;
+    gap:10px;
+    margin-top:25px;
+    padding-top:20px;
+    border-top:1px solid var(--borde);
+}
+
+.foto-empleado-area{
+    display:flex;
+    gap:20px;
+    align-items:center;
+    margin-bottom:25px;
+}
+
+.foto-empleado{
+    width:80px;height:80px;
+    background:#eff6ff;
+    border-radius:50%;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    font-size:30px;
+}
+
+.tallas-extra{
+    background:#f8fafc;
+    border-radius:12px;
+    padding:18px;
+    margin-top:5px;
+}
+
+.tallas-extra-header{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+}
+
+.tallas-extra p{color:var(--gris);font-size:13px}
+
+/* RESPONSIVE */
+.btn-menu-movil{display:none}
+
+@media(max-width:1100px){
+    .estadisticas-grid{grid-template-columns:repeat(2,1fr)}
+    .graficas-grid{grid-template-columns:1fr}
+    .panel-filtros{grid-template-columns:1fr 1fr}
+    .campo-busqueda{width:100%}
+}
+
+@media(max-width:800px){
+    .sidebar{
+        transform:translateX(-100%);
+        transition:.25s;
+    }
+
+    .sidebar.abierto{transform:translateX(0)}
+
+    .contenido{
+        margin-left:0;
+        width:100%;
+        padding:15px;
+    }
+
+    .btn-menu-movil{
+        display:block;
+        border:1px solid var(--borde);
+        background:#fff;
+        width:40px;height:40px;
+        border-radius:8px;
+    }
+
+    .header-principal{
+        align-items:flex-start;
+        gap:10px;
+    }
+
+    .header-acciones .busqueda-global,
+    .usuario-header div:not(.usuario-avatar){
+        display:none;
+    }
+
+    .seccion-encabezado{
+        align-items:flex-start;
+        gap:15px;
+    }
+
+    .estadisticas-grid,
+    .resumen-dotacion,
+    .inventario-stats{
+        grid-template-columns:1fr;
+    }
+
+    .inventario-stat{
+        border-right:0;
+        border-bottom:1px solid var(--borde);
+    }
+
+    .form-grid{grid-template-columns:1fr}
+    .campo-ancho{grid-column:auto}
+
+    .panel-filtros{grid-template-columns:1fr}
+    .inventario-filtros{grid-template-columns:1fr}
+
+    .seccion-encabezado h2{font-size:25px}
+}
+
+/* ===== TEMA PROFESIONAL UNIFICADO ===== */
+:root{
+ --azul:#2563eb;--azul2:#3b82f6;--azulosc:#0b3268;--azulprof:#082653;
+ --verde:#16b86a;--amarillo:#f59e0b;--morado:#7c3aed;--rojo:#ef4444;
+ --fondo:#f5f8fc;--texto:#12355b;--gris:#64748b;--borde:#dce5f0;
+ --sombra:0 8px 25px rgba(15,47,99,.07)
+}
+body{background:radial-gradient(circle at 100% 0,rgba(37,99,235,.055),transparent 30%),var(--fondo);color:var(--texto);font-family:Inter,"Segoe UI",Arial,sans-serif}
+
+/* LOGIN */
+.pantalla-login{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:45px 20px;position:relative;overflow:hidden;background:radial-gradient(circle at 10% 10%,rgba(59,130,246,.12),transparent 30%),linear-gradient(135deg,#f7fbff,#edf5ff 55%,#fff)}
+.pantalla-login:before{content:"";position:absolute;width:650px;height:650px;left:-320px;bottom:-430px;border-radius:50%;background:linear-gradient(145deg,#0b4db3,#3b82f6)}
+.pantalla-login:after{content:"";position:absolute;width:500px;height:500px;right:-300px;top:-330px;border-radius:50%;border:90px solid rgba(59,130,246,.08)}
+.login-marca,.login-card,.login-pie{position:relative;z-index:2}
+.login-marca{text-align:center;margin-bottom:26px}
+.logo-circulo{width:92px;height:92px;display:grid;place-items:center;margin:0 auto 18px;border-radius:27px;background:linear-gradient(135deg,#38aaf2,#2563eb);color:#fff;font-size:42px;box-shadow:0 15px 35px rgba(37,99,235,.25)}
+.login-marca h1{margin:0;color:#0b3268;font-size:34px;font-weight:850;letter-spacing:-.8px}
+.login-marca p{margin:7px 0 0;color:#5c78a0;font-size:16px}
+.login-card{width:min(540px,100%);background:rgba(255,255,255,.97);border:1px solid #dce7f3;border-radius:25px;padding:38px 40px;box-shadow:0 25px 65px rgba(8,38,83,.13)}
+.login-header{margin-bottom:27px}.login-header h2{color:#0b3268;font-size:29px;margin:0 0 7px;font-weight:800}.login-header p{color:#6480a4;font-size:16px;margin:0}
+.login-card .campo{margin-bottom:20px}.login-card .campo label{display:block;color:#12355b;font-size:14px;font-weight:750;margin-bottom:8px}
+.campo-icono{display:flex;align-items:center;min-height:55px;padding:0 15px;border:1px solid #d6e2ef;border-radius:13px;background:#fff}
+.campo-icono:focus-within{border-color:#3b82f6;box-shadow:0 0 0 4px rgba(37,99,235,.08)}
+.campo-icono>span{font-size:18px;margin-right:11px}.campo-icono input{flex:1;border:0!important;outline:0!important;box-shadow:none!important;min-height:50px;background:transparent!important}
+.btn-ojo{border:0;background:transparent;cursor:pointer;font-size:17px;padding:7px;color:#54729a}
+.login-opciones{display:flex;align-items:center;justify-content:space-between;gap:15px;margin:5px 0 23px;color:#264d78;font-size:14px}
+.btn-link{border:0;background:none;color:#2563eb;cursor:pointer;font-size:14px}
+.btn-login{width:100%;height:55px;border:0;border-radius:13px;background:linear-gradient(135deg,#2879ef,#2563eb);color:#fff;font-size:17px;font-weight:750;cursor:pointer;box-shadow:0 10px 24px rgba(37,99,235,.22)}
+.login-pie{margin-top:23px;color:#6580a2;font-size:13px}
+
+/* PANEL */
+.dashboard{background:var(--fondo);min-height:100vh}
+.sidebar{width:280px!important;background:linear-gradient(180deg,#0b3268,#082653)!important;border-right:0!important;box-shadow:5px 0 25px rgba(8,38,83,.12)}
+.sidebar .logo h1,.sidebar .logo p{color:#fff}.sidebar .logo p{color:#b8cae5}
+.menu-titulo{color:#9db4d4!important}
+.menu-item{color:#d8e5f5!important;border-radius:12px!important}
+.menu-item:hover{background:rgba(255,255,255,.1)!important;color:#fff!important}
+.menu-item.activo{background:linear-gradient(135deg,#2298f3,#2563eb)!important;color:#fff!important;box-shadow:0 8px 20px rgba(37,99,235,.28)}
+.contenido{margin-left:280px!important;width:calc(100% - 280px)!important;background:transparent;padding:22px 28px 50px!important}
+.header-principal{border-bottom:1px solid var(--borde)!important}.header-titulo h1{color:#103660!important;font-weight:800!important}
+.saludo-pequeno,.etiqueta-seccion{color:#2563eb!important;font-weight:800}
+.busqueda-global input{border:1px solid #d9e3ef!important;border-radius:14px!important;background:#fff!important}
+.estadisticas-grid,.graficas-grid{gap:20px!important}
+.tarjeta-estadistica,.panel-grafica,.panel-tabla,.panel-filtros,.inventario-panel{background:#fff!important;border:1px solid #e0e8f2!important;border-radius:18px!important;box-shadow:var(--sombra)!important}
+.tarjeta-estadistica:hover{transform:translateY(-3px);box-shadow:0 14px 35px rgba(15,47,99,.12)!important}
+.estadistica-contenido strong{color:#12355b!important;font-weight:800}.estadistica-contenido span{color:#4e6b8f!important}
+.panel-titulo h3,.panel-tabla-header h3{color:#12355b!important;font-weight:800}.panel-titulo p,.panel-tabla-header p{color:#8195ae!important}
+.btn-principal{background:linear-gradient(135deg,#2879ef,#2563eb)!important;border:0!important;border-radius:13px!important;box-shadow:0 7px 18px rgba(37,99,235,.22)}
+.campo input,.campo select,.campo textarea{border:1px solid #d9e3ef!important;border-radius:11px!important}
+.campo input:focus,.campo select:focus,.campo textarea:focus{border-color:#2563eb!important;box-shadow:0 0 0 4px rgba(37,99,235,.08)!important}
+thead{background:#f8fafd!important}th{color:#45627f!important}td{border-bottom:1px solid #edf2f7!important;color:#365776!important}
+tbody tr:hover{background:#f8fbff!important}.modal{background:rgba(7,30,62,.62)!important;backdrop-filter:blur(5px)}
+.modal-contenido{border-radius:20px!important;border:1px solid #e1e9f3!important;box-shadow:0 25px 70px rgba(8,38,83,.25)!important}
+::-webkit-scrollbar{width:8px;height:8px}::-webkit-scrollbar-track{background:#eef3f8}::-webkit-scrollbar-thumb{background:#b7c8dc;border-radius:20px}
+@media(max-width:800px){.sidebar{transform:translateX(-100%)!important}.sidebar.abierto{transform:translateX(0)!important}.contenido{margin-left:0!important;width:100%!important;padding:15px!important}.login-card{padding:30px 24px}.login-marca h1{font-size:28px}}
+
+
+
+/* =========================================================
+   LOGIN PROFESIONAL — DISEÑO DE DOS COLUMNAS
+   ========================================================= */
+
+.login-profesional{
+    min-height:100vh;
+    width:100%;
+    position:relative;
+    overflow:hidden;
+
+    display:flex;
+    align-items:center;
+    justify-content:center;
+
+    padding:55px 6vw;
+
+    background:
+        radial-gradient(
+            circle at 76% 18%,
+            rgba(79,145,245,.14),
+            transparent 29%
+        ),
+        radial-gradient(
+            circle at 18% 78%,
+            rgba(37,99,235,.08),
+            transparent 32%
+        ),
+        linear-gradient(
+            135deg,
+            #f8fbff 0%,
+            #eef5ff 55%,
+            #f8fbff 100%
+        );
+}
+
+
+/* Decoración superior derecha */
+
+.login-profesional .decoracion-superior{
+    position:absolute;
+    width:520px;
+    height:520px;
+    right:-205px;
+    top:-320px;
+
+    border-radius:50%;
+
+    border:
+        95px solid rgba(112,164,240,.10);
+
+    box-shadow:
+        0 0 0 75px rgba(112,164,240,.055),
+        0 0 0 155px rgba(112,164,240,.035);
+
+    pointer-events:none;
+}
+
+
+/* Decoración inferior izquierda */
+
+.login-profesional .decoracion-inferior{
+    position:absolute;
+
+    width:700px;
+    height:300px;
+
+    left:-170px;
+    bottom:-145px;
+
+    background:
+        linear-gradient(
+            145deg,
+            #0b4db3,
+            #2879ef
+        );
+
+    border-radius:
+        50% 65% 0 0;
+
+    transform:
+        rotate(18deg);
+
+    opacity:.96;
+
+    box-shadow:
+        0 -35px 0 rgba(91,151,239,.27),
+        0 -72px 0 rgba(145,190,247,.18);
+
+    pointer-events:none;
+}
+
+
+.login-layout{
+    width:min(1280px,100%);
+
+    display:grid;
+
+    grid-template-columns:
+        minmax(420px,1fr)
+        minmax(480px,620px);
+
+    align-items:center;
+
+    gap:70px;
+
+    position:relative;
+
+    z-index:2;
+}
+
+
+/* =========================================================
+   PARTE IZQUIERDA
+   ========================================================= */
+
+.login-presentacion{
+    padding:
+        15px 0 30px 5px;
+
+    align-self:center;
+}
+
+
+.login-logo-grande{
+    width:118px;
+    height:118px;
+
+    display:grid;
+    place-items:center;
+
+    border-radius:29px;
+
+    background:
+        linear-gradient(
+            145deg,
+            #36aaf4,
+            #2563eb 72%,
+            #1555d4
+        );
+
+    color:white;
+
+    font-size:57px;
+
+    box-shadow:
+        0 17px 35px
+        rgba(37,99,235,.25);
+
+    margin-bottom:24px;
+}
+
+
+.login-presentacion h1{
+    margin:0;
+
+    color:#123b76;
+
+    font-size:
+        clamp(38px,4vw,52px);
+
+    line-height:1.05;
+
+    font-weight:900;
+
+    letter-spacing:-1.8px;
+}
+
+
+.login-subtitulo{
+    margin:
+        10px 0 25px;
+
+    color:#4e6f9f;
+
+    font-size:21px;
+
+    line-height:1.4;
+}
+
+
+.login-linea{
+    width:90px;
+    height:5px;
+
+    border-radius:10px;
+
+    background:
+        linear-gradient(
+            90deg,
+            #2563eb,
+            #38aaf4
+        );
+
+    margin-bottom:34px;
+}
+
+
+/* Beneficios */
+
+.login-beneficios{
+    display:flex;
+    flex-direction:column;
+
+    gap:23px;
+
+    max-width:450px;
+}
+
+
+.beneficio{
+    display:flex;
+    align-items:center;
+
+    gap:23px;
+}
+
+
+.beneficio-icono{
+    flex:
+        0 0 76px;
+
+    width:76px;
+    height:76px;
+
+    display:grid;
+    place-items:center;
+
+    border-radius:50%;
+
+    background:
+        rgba(255,255,255,.88);
+
+    color:#1264df;
+
+    font-size:31px;
+
+    box-shadow:
+        0 10px 28px
+        rgba(36,101,191,.13);
+
+    border:
+        1px solid rgba(255,255,255,.9);
+}
+
+
+.beneficio strong{
+    display:block;
+
+    color:#0e4899;
+
+    font-size:18px;
+
+    font-weight:750;
+
+    margin-bottom:4px;
+}
+
+
+.beneficio span{
+    display:block;
+
+    color:#5475a4;
+
+    font-size:15px;
+}
+
+
+.login-frase{
+    margin-top:58px;
+
+    color:white;
+
+    font-size:29px;
+
+    line-height:1.1;
+
+    font-style:italic;
+
+    transform:rotate(-3deg);
+
+    text-shadow:
+        0 2px 7px
+        rgba(0,0,0,.08);
+}
+
+
+.login-frase strong{
+    display:block;
+}
+
+
+.login-frase i{
+    display:block;
+
+    width:145px;
+    height:6px;
+
+    margin:
+        8px 0 0 52px;
+
+    border-radius:10px;
+
+    background:#5cc4ff;
+
+    transform:rotate(-2deg);
+}
+
+
+/* =========================================================
+   TARJETA DERECHA
+   ========================================================= */
+
+.login-card-profesional{
+    width:100%;
+    max-width:none;
+
+    padding:
+        35px 39px 31px;
+
+    background:
+        rgba(255,255,255,.94);
+
+    border:
+        1px solid
+        rgba(218,229,242,.92);
+
+    border-radius:27px;
+
+    box-shadow:
+        0 25px 70px
+        rgba(28,74,135,.13);
+
+    backdrop-filter:
+        blur(10px);
+}
+
+
+.login-card-marca{
+    display:flex;
+    justify-content:center;
+
+    margin-bottom:8px;
+}
+
+
+.login-logo-card{
+    width:104px;
+    height:104px;
+
+    display:grid;
+    place-items:center;
+
+    border-radius:28px;
+
+    background:
+        linear-gradient(
+            145deg,
+            #36aaf4,
+            #2563eb
+        );
+
+    color:white;
+
+    font-size:48px;
+
+    box-shadow:
+        0 13px 30px
+        rgba(37,99,235,.23);
+}
+
+
+.login-card-profesional .login-header{
+    text-align:center;
+
+    margin-bottom:29px;
+}
+
+
+.login-card-profesional .login-header h2{
+    margin:0 0 5px;
+
+    color:#103b76;
+
+    font-size:38px;
+
+    line-height:1.1;
+
+    font-weight:850;
+
+    letter-spacing:-1px;
+}
+
+
+.login-card-profesional .login-header p{
+    color:#5d79a4;
+
+    font-size:18px;
+
+    margin:0;
+}
+
+
+.login-card-profesional .campo{
+    margin-bottom:20px;
+}
+
+
+.login-card-profesional .campo label{
+    color:#113a70;
+
+    font-size:16px;
+
+    font-weight:750;
+
+    margin-bottom:9px;
+}
+
+
+.login-input{
+    min-height:62px;
+
+    padding:
+        0 16px;
+
+    border:
+        1px solid #d4e0ef;
+
+    border-radius:14px;
+
+    background:#fff;
+}
+
+
+.login-input>span{
+    position:static!important;
+
+    margin-right:12px;
+
+    color:#52739f;
+
+    font-size:22px;
+}
+
+
+.login-input input{
+    min-height:58px;
+
+    padding:
+        0!important;
+
+    color:#234d7d;
+
+    font-size:17px;
+
+    border:0!important;
+
+    background:transparent!important;
+}
+
+
+.login-input input::placeholder{
+    color:#8298b6;
+}
+
+
+.login-input:focus-within{
+    border-color:#4a8df1;
+
+    box-shadow:
+        0 0 0 4px
+        rgba(37,99,235,.08);
+}
+
+
+.login-card-profesional .btn-ojo{
+    position:static;
+
+    margin-left:auto;
+
+    font-size:19px;
+
+    color:#5b769c;
+}
+
+
+.login-card-profesional .login-opciones{
+    margin:
+        4px 0 25px;
+
+    font-size:15px;
+}
+
+
+.login-card-profesional .recordarme{
+    color:#173d6f;
+
+    display:flex;
+    align-items:center;
+    gap:9px;
+}
+
+
+.login-card-profesional .recordarme input{
+    width:21px;
+    height:21px;
+
+    accent-color:#2563eb;
+}
+
+
+.login-card-profesional .btn-link{
+    color:#1264df;
+
+    font-size:15px;
+
+    font-weight:600;
+}
+
+
+.login-card-profesional .btn-login{
+    height:67px;
+
+    border-radius:15px;
+
+    display:flex;
+    align-items:center;
+    justify-content:center;
+
+    gap:14px;
+
+    background:
+        linear-gradient(
+            135deg,
+            #2389f5,
+            #155bea
+        );
+
+    font-size:20px;
+
+    box-shadow:
+        0 13px 28px
+        rgba(37,99,235,.24);
+}
+
+
+.login-card-profesional .btn-login span{
+    font-size:29px;
+    line-height:1;
+}
+
+
+.login-seguridad{
+    display:flex;
+    justify-content:center;
+    align-items:center;
+
+    gap:9px;
+
+    margin-top:25px;
+    padding-top:23px;
+
+    border-top:
+        1px solid #e3ebf4;
+
+    color:#5e7ba5;
+
+    font-size:15px;
+}
+
+
+.login-seguridad span:first-child{
+    font-size:20px;
+}
+
+
+.login-card-profesional .mensaje-login{
+    margin-top:12px;
+}
+
+
+.login-profesional .login-pie{
+    position:absolute;
+
+    bottom:18px;
+
+    color:#5c78a0;
+
+    font-size:13px;
+
+    z-index:3;
+}
+
+
+/* =========================================================
+   RESPONSIVE
+   ========================================================= */
+
+@media(max-width:1050px){
+
+    .login-layout{
+        grid-template-columns:
+            1fr;
+
+        max-width:620px;
+
+        gap:25px;
+    }
+
+    .login-presentacion{
+        text-align:center;
+        padding:0;
+    }
+
+    .login-logo-grande{
+        margin-left:auto;
+        margin-right:auto;
+    }
+
+    .login-presentacion h1{
+        font-size:39px;
+    }
+
+    .login-linea{
+        margin-left:auto;
+        margin-right:auto;
+    }
+
+    .login-beneficios{
+        margin:auto;
+        text-align:left;
+    }
+
+    .login-frase{
+        display:none;
+    }
+
+    .login-profesional{
+        padding:
+            35px 20px 65px;
+    }
+}
+
+
+@media(max-width:600px){
+
+    .login-layout{
+        width:100%;
+    }
+
+    .login-presentacion h1{
+        font-size:30px;
+        letter-spacing:-1px;
+    }
+
+    .login-subtitulo{
+        font-size:16px;
+    }
+
+    .login-beneficios{
+        display:none;
+    }
+
+    .login-logo-grande{
+        width:88px;
+        height:88px;
+        font-size:43px;
+        border-radius:23px;
+    }
+
+    .login-logo-card{
+        width:82px;
+        height:82px;
+        font-size:39px;
+        border-radius:23px;
+    }
+
+    .login-card-profesional{
+        padding:
+            28px 22px 25px;
+        border-radius:21px;
+    }
+
+    .login-card-profesional .login-header h2{
+        font-size:29px;
+    }
+
+    .login-card-profesional .login-header p{
+        font-size:15px;
+    }
+
+    .login-card-profesional .login-opciones{
+        align-items:flex-start;
+        flex-direction:column;
+    }
+
+    .login-card-profesional .btn-link{
+        align-self:flex-end;
+    }
+
+    .login-profesional .decoracion-inferior{
+        width:500px;
+        height:210px;
+        left:-220px;
+    }
+
+    .login-profesional .decoracion-superior{
+        width:300px;
+        height:300px;
+        right:-190px;
+        top:-200px;
+        border-width:55px;
+    }
+}
+
+
+
+/* =========================================================
+   PALETA CLARA PROFESIONAL — PANEL DE CONTROL
+   ========================================================= */
+
+/* Fondo general */
+.dashboard,
+body{
+    background:#f5f8fc !important;
+    color:#173a68 !important;
+}
+
+/* Sidebar claro */
+.sidebar{
+    background:#ffffff !important;
+    border-right:1px solid #dfe8f3 !important;
+    box-shadow:4px 0 18px rgba(23,58,104,.06) !important;
+}
+
+/* Logo */
+.sidebar .logo{
+    border-bottom:1px solid #dce6f1 !important;
+}
+
+.sidebar .logo h1{
+    color:#123b70 !important;
+    font-weight:850 !important;
+}
+
+.sidebar .logo p{
+    color:#6b84a5 !important;
+}
+
+/* Títulos de menú */
+.menu-titulo{
+    color:#8aa0bb !important;
+    font-weight:800 !important;
+    letter-spacing:.4px !important;
+}
+
+/* Menú */
+.menu-item{
+    color:#4d6687 !important;
+    background:transparent !important;
+    border-radius:11px !important;
+    font-weight:600 !important;
+}
+
+.menu-item:hover{
+    color:#1559b7 !important;
+    background:#f0f6ff !important;
+}
+
+.menu-item.activo{
+    color:#175fcb !important;
+    background:#eaf3ff !important;
+    box-shadow:none !important;
+    font-weight:750 !important;
+}
+
+/* Iconos del menú */
+.menu-item .icono,
+.menu-item i,
+.menu-item span:first-child{
+    color:#5d7da5 !important;
+}
+
+.menu-item.activo .icono,
+.menu-item.activo i,
+.menu-item.activo span:first-child{
+    color:#2563eb !important;
+}
+
+/* Zona del usuario */
+.sidebar .usuario-sidebar,
+.sidebar .perfil-usuario,
+.sidebar .usuario{
+    color:#173a68 !important;
+}
+
+.sidebar .usuario strong,
+.sidebar .perfil-usuario strong{
+    color:#173a68 !important;
+}
+
+.sidebar .usuario small,
+.sidebar .perfil-usuario small,
+.sidebar .usuario span{
+    color:#7188a6 !important;
+}
+
+/* Separador inferior */
+.sidebar > *{
+    border-color:#dce6f1 !important;
+}
+
+/* Botón cerrar sesión */
+.sidebar .btn-cerrar-sesion,
+.sidebar button:last-child{
+    background:#ffffff !important;
+    color:#5f7695 !important;
+    border:1px solid #dce6f1 !important;
+    box-shadow:none !important;
+}
+
+.sidebar .btn-cerrar-sesion:hover,
+.sidebar button:last-child:hover{
+    background:#f3f7fc !important;
+    color:#2563eb !important;
+    border-color:#cbdced !important;
+}
+
+/* Área principal */
+.contenido{
+    background:#f5f8fc !important;
+}
+
+/* Encabezados */
+.header-principal{
+    background:transparent !important;
+    border-bottom:1px solid #dce6f1 !important;
+}
+
+.header-titulo h1{
+    color:#123b70 !important;
+}
+
+.saludo-pequeno,
+.etiqueta-seccion{
+    color:#2563eb !important;
+}
+
+/* Buscador */
+.busqueda-global input{
+    background:#ffffff !important;
+    color:#315579 !important;
+    border:1px solid #d9e3ef !important;
+    box-shadow:0 3px 12px rgba(23,58,104,.04) !important;
+}
+
+/* Tarjetas */
+.tarjeta-estadistica,
+.panel-grafica,
+.panel-tabla,
+.panel-filtros,
+.inventario-panel{
+    background:#ffffff !important;
+    border:1px solid #dfe8f2 !important;
+    box-shadow:0 7px 24px rgba(23,58,104,.055) !important;
+}
+
+/* Textos */
+.tarjeta-estadistica h3,
+.tarjeta-estadistica strong,
+.panel-titulo h3,
+.panel-tabla-header h3{
+    color:#123b70 !important;
+}
+
+.tarjeta-estadistica span,
+.panel-titulo p,
+.panel-tabla-header p{
+    color:#7188a6 !important;
+}
+
+/* Botones principales */
+.btn-principal{
+    background:#2563eb !important;
+    color:#ffffff !important;
+    border:0 !important;
+    box-shadow:0 7px 18px rgba(37,99,235,.20) !important;
+}
+
+.btn-principal:hover{
+    background:#1d56c7 !important;
+}
+
+/* Tablas */
+table{
+    background:#ffffff !important;
+}
+
+thead{
+    background:#f7fafd !important;
+}
+
+th{
+    color:#4e6887 !important;
+}
+
+td{
+    color:#365776 !important;
+    border-bottom:1px solid #edf2f7 !important;
+}
+
+tbody tr:hover{
+    background:#f8fbff !important;
+}
+
+/* Estados */
+.estado{
+    font-weight:750 !important;
+}
+
+/* Avatar */
+.avatar,
+.avatar-usuario{
+    background:#2563eb !important;
+    color:#ffffff !important;
+}
+
+/* =========================================================
+   COLORES DE INDICADORES
+   ========================================================= */
+
+.card-azul,
+.icono-azul{
+    background:#eaf3ff !important;
+    color:#2563eb !important;
+}
+
+.card-verde,
+.icono-verde{
+    background:#eafaf2 !important;
+    color:#16a765 !important;
+}
+
+.card-amarillo,
+.icono-amarillo{
+    background:#fff8e7 !important;
+    color:#e99a00 !important;
+}
+
+.card-morado,
+.icono-morado{
+    background:#f2edff !important;
+    color:#7c3aed !important;
+}
+
+/* Inputs y selects */
+.campo input,
+.campo select,
+.campo textarea{
+    background:#ffffff !important;
+    color:#284e78 !important;
+    border:1px solid #d8e3ef !important;
+}
+
+.campo label{
+    color:#173d70 !important;
+}
+
+/* Modal */
+.modal-contenido{
+    background:#ffffff !important;
+    border:1px solid #dfe8f2 !important;
+}
+
+/* Scroll */
+::-webkit-scrollbar-thumb{
+    background:#b8c9dc !important;
+}
+
+::-webkit-scrollbar-track{
+    background:#eef3f8 !important;
+}
+
+
+
+/* =========================================================
+   ACABADO VISUAL PROFESIONAL — CONTROL-DOTACIÓN
+========================================================= */
+
+:root{
+    --cd-azul:#1769e8;
+    --cd-azul-oscuro:#092f63;
+    --cd-azul-claro:#edf5ff;
+    --cd-texto:#173d6d;
+    --cd-gris:#6c819d;
+    --cd-borde:#dce6f1;
+    --cd-fondo:#f5f8fc;
+}
+
+/* LOGIN */
+.login-profesional,
+#pantallaLogin{
+    background:
+        radial-gradient(circle at 85% 8%,rgba(53,153,245,.15),transparent 28%),
+        radial-gradient(circle at 8% 92%,rgba(37,99,235,.08),transparent 28%),
+        linear-gradient(135deg,#fbfdff 0%,#eef5ff 100%) !important;
+}
+
+.login-logo-grande,
+.logo-principal{
+    background:linear-gradient(145deg,#2ea8f5,#1769e8) !important;
+    color:#fff !important;
+    font-weight:900 !important;
+    font-size:38px !important;
+    letter-spacing:-2px;
+}
+
+.login-logo-card,
+.logo-login{
+    background:linear-gradient(145deg,#2ea8f5,#1769e8) !important;
+    color:#fff !important;
+    font-weight:900 !important;
+    font-size:32px !important;
+    letter-spacing:-1px;
+}
+
+.login-presentacion h1,
+.login-card-profesional .login-header h2,
+.login-titulo h2{
+    color:var(--cd-azul-oscuro) !important;
+}
+
+.login-subtitulo,
+.login-card-profesional .login-header p,
+.login-titulo p{
+    color:#617b9d !important;
+}
+
+.beneficio-icono{
+    background:#fff !important;
+    color:var(--cd-azul) !important;
+    border:1px solid #e0eaf5 !important;
+}
+
+.login-input,
+.input-box{
+    background:#fff !important;
+    border-color:var(--cd-borde) !important;
+}
+
+.btn-login,
+.login-card-profesional .btn-login{
+    background:linear-gradient(135deg,#2c8cf4,#1769e8) !important;
+    box-shadow:0 12px 28px rgba(23,105,232,.22) !important;
+}
+
+/* PANEL */
+.sidebar{
+    background:linear-gradient(180deg,#092f63 0%,#071f45 100%) !important;
+}
+
+.menu-item.activo{
+    background:linear-gradient(135deg,#2c8cf4,#1769e8) !important;
+}
+
+.contenido{
+    background:
+        radial-gradient(circle at 100% 0,rgba(45,140,244,.045),transparent 27%),
+        var(--cd-fondo) !important;
+}
+
+.topbar,
+.header-principal{
+    border-color:var(--cd-borde) !important;
+}
+
+.topbar-titulo h1,
+.header-titulo h1,
+.seccion-header h2{
+    color:var(--cd-azul-oscuro) !important;
+    letter-spacing:-.6px;
+}
+
+.topbar-titulo small,
+.seccion-header small,
+.saludo-pequeno,
+.etiqueta-seccion{
+    color:var(--cd-azul) !important;
+}
+
+.tarjeta-estadistica,
+.tarjeta,
+.panel,
+.panel-grafica,
+.panel-tabla,
+.panel-filtros,
+.inventario-panel{
+    background:#fff !important;
+    border:1px solid #e1e9f2 !important;
+    box-shadow:0 8px 28px rgba(20,59,105,.065) !important;
+    border-radius:18px !important;
+}
+
+.tarjeta:hover,
+.tarjeta-estadistica:hover{
+    transform:translateY(-2px);
+    box-shadow:0 14px 34px rgba(20,59,105,.10) !important;
+}
+
+.btn-principal{
+    background:linear-gradient(135deg,#2c8cf4,#1769e8) !important;
+    border:0 !important;
+    box-shadow:0 8px 20px rgba(23,105,232,.18) !important;
+}
+
+.campo input,
+.campo select,
+.campo textarea,
+.busqueda-global input,
+.busqueda input{
+    background:#fff !important;
+    border-color:#d9e4ef !important;
+    color:#234b78 !important;
+}
+
+.campo input:focus,
+.campo select:focus,
+.campo textarea:focus{
+    border-color:#4c91ee !important;
+    box-shadow:0 0 0 4px rgba(23,105,232,.08) !important;
+}
+
+thead{
+    background:#f7faff !important;
+}
+
+th{
+    color:#4b6687 !important;
+}
+
+td{
+    color:#365879 !important;
+    border-bottom-color:#edf2f7 !important;
+}
+
+tbody tr:hover{
+    background:#f8fbff !important;
+}
+
+/* Iconos de las tarjetas */
+.card-icon,
+.tarjeta-icono{
+    background:#edf5ff !important;
+    color:#1769e8 !important;
+}
+
+/* Modales */
+.modal-contenido{
+    border-radius:20px !important;
+    border:1px solid #dfe8f2 !important;
+    box-shadow:0 25px 70px rgba(8,38,83,.22) !important;
+}
+
+/* Botones secundarios */
+.btn-secundario{
+    background:#f4f7fb !important;
+    border:1px solid #dbe5ef !important;
+    color:#365879 !important;
+}
+
+/* Scroll */
+::-webkit-scrollbar-thumb{
+    background:#b9cbe0 !important;
+}
+
+
+/* =========================================================
+   MEJORA DE LEGIBILIDAD DEL PANEL LATERAL
+========================================================= */
+.sidebar{
+    background:linear-gradient(180deg,#082e61 0%,#061d40 100%) !important;
+}
+
+.sidebar-marca,
+.sidebar-marca *{
+    color:#ffffff !important;
+}
+
+.sidebar-marca p,
+.sidebar-marca small,
+.sidebar-marca span:not(.sidebar-logo){
+    color:#a9c0dc !important;
+}
+
+.sidebar-logo{
+    background:#eef6ff !important;
+    color:#1769e8 !important;
+}
+
+.menu-titulo{
+    color:#9bb5d4 !important;
+    font-weight:800 !important;
+    letter-spacing:.8px !important;
+}
+
+.menu-item{
+    color:#dce9f8 !important;
+    font-weight:650 !important;
+}
+
+.menu-item:hover{
+    color:#ffffff !important;
+    background:rgba(255,255,255,.09) !important;
+}
+
+.menu-item.activo{
+    color:#ffffff !important;
+    background:linear-gradient(135deg,#2d8df4,#1769e8) !important;
+    box-shadow:0 8px 20px rgba(23,105,232,.24) !important;
+}
+
+.menu-item .menu-icono,
+.menu-item .icono,
+.menu-item i,
+.menu-item span:first-child{
+    color:#c9ddf4 !important;
+}
+
+.menu-item.activo .menu-icono,
+.menu-item.activo .icono,
+.menu-item.activo i,
+.menu-item.activo span:first-child{
+    color:#ffffff !important;
+}
+
+.perfil-sidebar,
+.sidebar .usuario-sidebar,
+.sidebar .perfil-usuario,
+.sidebar .usuario{
+    color:#ffffff !important;
+}
+
+.perfil-sidebar strong,
+.sidebar .usuario strong,
+.sidebar .perfil-usuario strong{
+    color:#ffffff !important;
+}
+
+.perfil-sidebar small,
+.sidebar .usuario small,
+.sidebar .perfil-usuario small,
+.sidebar .usuario span{
+    color:#a9c0dc !important;
+}
+
+.sidebar .btn-cerrar-sesion,
+.sidebar button:last-child{
+    background:#ffffff !important;
+    color:#365d89 !important;
+    font-weight:650 !important;
+}
+
+.sidebar .btn-cerrar-sesion:hover,
+.sidebar button:last-child:hover{
+    color:#1769e8 !important;
+    background:#f3f8ff !important;
+}
+</style>
+</head>
+
+<body>
+
+<!-- LOGIN -->
+<div id="pantallaLogin" class="pantalla-login login-profesional">
+
+    <div class="login-fondo-decoracion decoracion-superior"></div>
+    <div class="login-fondo-decoracion decoracion-inferior"></div>
+
+    <div class="login-layout">
+
+        <!-- PRESENTACIÓN -->
+        <section class="login-presentacion">
+
+            <div class="login-logo-grande">CD</div>
+
+            <h1>CONTROL-DOTACIÓN</h1>
+
+            <p class="login-subtitulo">
+                Sistema de gestión de dotación empresarial
+            </p>
+
+            <div class="login-linea"></div>
+
+            <div class="login-beneficios">
+
+                <div class="beneficio">
+                    <div class="beneficio-icono">🛡️</div>
+                    <div>
+                        <strong>Control de inventario</strong>
+                        <span>Registra y administra tu dotación.</span>
+                    </div>
+                </div>
+
+                <div class="beneficio">
+                    <div class="beneficio-icono">👥</div>
+                    <div>
+                        <strong>Gestión de empleados</strong>
+                        <span>Organiza tu equipo de trabajo.</span>
+                    </div>
+                </div>
+
+                <div class="beneficio">
+                    <div class="beneficio-icono">📊</div>
+                    <div>
+                        <strong>Reportes en tiempo real</strong>
+                        <span>Toma mejores decisiones.</span>
+                    </div>
+                </div>
+
+            </div>
+
+            <div class="login-frase">
+                <strong>Tu dotación,</strong>
+                <strong>en buenas manos</strong>
+                <i></i>
+            </div>
+
+        </section>
+
+
+        <!-- FORMULARIO -->
+        <section class="login-card login-card-profesional">
+
+            <div class="login-card-marca">
+                <div class="login-logo-card">CD</div>
+            </div>
+
+            <div class="login-header">
+                <h2>Bienvenido 👋</h2>
+                <p>Ingresa tus datos para continuar.</p>
+            </div>
+
+            <form id="loginForm">
+
+                <div class="campo">
+                    <label>Usuario</label>
+
+                    <div class="campo-icono login-input">
+                        <span>👤</span>
+
+                        <input id="usuario"
+                               type="text"
+                               placeholder="Ingresa tu usuario"
+                               autocomplete="username"
+                               required>
+                    </div>
+                </div>
+
+
+                <div class="campo">
+                    <label>Contraseña</label>
+
+                    <div class="campo-icono login-input">
+                        <span>🔒</span>
+
+                        <input id="password"
+                               type="password"
+                               placeholder="Ingresa tu contraseña"
+                               autocomplete="current-password"
+                               required>
+
+                        <button type="button"
+                                id="mostrarPassword"
+                                class="btn-ojo">
+                            👁️
+                        </button>
+                    </div>
+                </div>
+
+
+                <div class="login-opciones">
+
+                    <label class="recordarme">
+                        <input type="checkbox" id="recordarme">
+                        <span>Recordarme</span>
+                    </label>
+
+                    <button type="button" class="btn-link">
+                        ¿Olvidaste tu contraseña?
+                    </button>
+
+                </div>
+
+
+                <button class="btn-login" type="submit">
+                    <span>⇥</span>
+                    Iniciar sesión
+                </button>
+
+                <div id="mensaje" class="mensaje-login"></div>
+
+                <div class="login-seguridad">
+                    <span>🛡️</span>
+                    <span>Tu información está segura</span>
+                </div>
+
+            </form>
+
+        </section>
+
+    </div>
+
+    <div class="login-pie">
+        Sistema de gestión de dotación
+    </div>
+
+</div>
+
+
+<!-- DASHBOARD -->
+<div id="dashboard" class="dashboard oculto">
+
+<aside class="sidebar" id="sidebar">
+
+    <div class="sidebar-marca">
+        <div class="sidebar-logo">👕</div>
+        <div>
+            <strong>CONTROL-</strong>
+            <strong>DOTACIÓN</strong>
+            <small>Sistema empresarial</small>
+        </div>
+    </div>
+
+    <div class="sidebar-separador"></div>
+
+    <nav class="menu">
+
+        <div class="menu-titulo">PRINCIPAL</div>
+
+        <button class="menu-item activo" data-seccion="seccion-inicio">
+            <span class="menu-icono">🏠</span> Inicio
+        </button>
+
+        <button class="menu-item" data-seccion="seccion-empleados">
+            <span class="menu-icono">👥</span> Empleados
+        </button>
+
+        <button class="menu-item" data-seccion="seccion-dotacion">
+            <span class="menu-icono">📦</span> Dotación
+        </button>
+
+        <button class="menu-item" data-seccion="seccion-inventario">
+            <span class="menu-icono">🏭</span> Inventario
+        </button>
+
+        <div class="menu-titulo">GESTIÓN</div>
+
+        <button class="menu-item" data-seccion="seccion-historial">
+            <span class="menu-icono">📋</span> Historial
+        </button>
+
+        <button class="menu-item" data-seccion="seccion-reportes">
+            <span class="menu-icono">📊</span> Reportes
+        </button>
+
+        <button class="menu-item" data-seccion="seccion-configuracion">
+            <span class="menu-icono">⚙️</span> Configuración
+        </button>
+
+    </nav>
+
+    <div class="sidebar-inferior">
+
+        <div class="perfil-sidebar">
+            <div class="perfil-avatar">A</div>
+            <div class="perfil-info">
+                <strong>Adriana</strong>
+                <span>Administradora</span>
+            </div>
+        </div>
+
+        <button id="cerrarSesion" class="btn-cerrar-sesion">
+            🚪 Cerrar sesión
+        </button>
+    </div>
+
+</aside>
+
+
+<main class="contenido">
+
+<header class="header-principal">
+
+    <div class="header-titulo">
+
+        <button id="btnMenuMovil" class="btn-menu-movil">☰</button>
+
+        <div>
+            <span class="saludo-pequeno">Panel de control</span>
+            <h1 id="tituloSeccion">Control de dotación</h1>
+        </div>
+
+    </div>
+
+    <div class="header-acciones">
+
+        <div class="busqueda-global">
+            <span>🔍</span>
+            <input id="buscarGlobal"
+                   placeholder="Buscar empleado, elemento o entrega...">
+            <button id="btnBuscarGlobal">→</button>
+        </div>
+
+        <div class="notificaciones-contenedor">
+
+            <button id="notificacionesBtn"
+                    class="btn-notificaciones">
+                🔔
+                <span id="contadorNotificaciones"
+                      class="contador-notificaciones">0</span>
+            </button>
+
+        </div>
+
+        <div class="usuario-header">
+            <div class="usuario-avatar">A</div>
+            <div>
+                <strong>Adriana</strong>
+                <span>Administradora</span>
+            </div>
+        </div>
+
+    </div>
+
+</header>
+
+
+<!-- ================= INICIO ================= -->
+
+<section id="seccion-inicio" class="seccion activa">
+
+<div class="seccion-encabezado">
+    <div>
+        <span class="etiqueta-seccion">RESUMEN GENERAL</span>
+        <h2>Resumen de dotación</h2>
+        <p>Consulta rápidamente el estado de empleados, entregas e inventario.</p>
+    </div>
+
+    <button class="btn-principal" data-seccion="seccion-dotacion">
+        + Nueva entrega
+    </button>
+</div>
+
+<div class="estadisticas-grid">
+
+    <div class="tarjeta-estadistica">
+        <div class="estadistica-icono azul">👥</div>
+        <div class="estadistica-contenido">
+            <span>Empleados</span>
+            <strong id="totalEmpleados">0</strong>
+            <small>Registrados en el sistema</small>
+        </div>
+    </div>
+
+    <div class="tarjeta-estadistica">
+        <div class="estadistica-icono verde">📦</div>
+        <div class="estadistica-contenido">
+            <span>Entregas realizadas</span>
+            <strong id="totalEntregas">0</strong>
+            <small>Total de entregas registradas</small>
+        </div>
+    </div>
+
+    <div class="tarjeta-estadistica">
+        <div class="estadistica-icono amarillo">⏳</div>
+        <div class="estadistica-contenido">
+            <span>Dotaciones pendientes</span>
+            <strong id="totalPendientes">0</strong>
+            <small>Requieren seguimiento</small>
+        </div>
+    </div>
+
+    <div class="tarjeta-estadistica">
+        <div class="estadistica-icono morado">📅</div>
+        <div class="estadistica-contenido">
+            <span>Entregas este mes</span>
+            <strong id="totalMes">0</strong>
+            <small>Durante el mes actual</small>
+        </div>
+    </div>
+
+</div>
+
+
+<div class="graficas-grid">
+
+    <div class="panel-grafica">
+        <div class="panel-titulo">
+            <div>
+                <h3>Entregas por mes</h3>
+                <p>Comportamiento de las entregas</p>
+            </div>
+            <span class="icono-panel">📈</span>
+        </div>
+
+        <div id="graficoMes" class="grafica-area"></div>
+    </div>
+
+
+    <div class="panel-grafica">
+
+        <div class="panel-titulo">
+            <div>
+                <h3>Dotación por elemento</h3>
+                <p>Distribución de las entregas</p>
+            </div>
+            <span class="icono-panel">📊</span>
+        </div>
+
+        <div class="dona-area">
+            <div class="dona"></div>
+            <div id="leyendaElementos" class="leyenda-grafica"></div>
+        </div>
+
+    </div>
+
+</div>
+
+
+<div class="panel-tabla">
+
+    <div class="panel-tabla-header">
+        <div>
+            <span class="etiqueta-seccion">ACTIVIDAD RECIENTE</span>
+            <h3>Últimas entregas</h3>
+            <p>Registro de las entregas más recientes.</p>
+        </div>
+
+        <button class="btn-secundario"
+                data-seccion="seccion-historial">
+            Ver historial →
+        </button>
+    </div>
+
+    <div class="tabla-responsive">
+
+        <table>
+            <thead>
+                <tr>
+                    <th>Fecha</th>
+                    <th>Empleado</th>
+                    <th>Elemento</th>
+                    <th>Cantidad</th>
+                    <th>Centro costo</th>
+                    <th>Estado</th>
+                </tr>
+            </thead>
+
+            <tbody id="tablaUltimasEntregasBody"></tbody>
+        </table>
+
+    </div>
+</div>
+
+</section>
+
+
+<!-- ================= EMPLEADOS ================= -->
+
+<section id="seccion-empleados" class="seccion">
+
+<div class="seccion-encabezado">
+    <div>
+        <span class="etiqueta-seccion">PERSONAL</span>
+        <h2>Empleados</h2>
+        <p>Administra la información y tallas de los empleados.</p>
+    </div>
+
+    <button id="nuevoEmpleado" class="btn-principal">
+        + Nuevo empleado
+    </button>
+</div>
+
+<div class="barra-herramientas">
+
+    <div class="campo-busqueda">
+        <span>🔍</span>
+        <input id="buscarEmpleado"
+               placeholder="Buscar por nombre, código o documento...">
+    </div>
+
+    <div class="contador-registros">
+        <strong id="contadorEmpleadosTabla">0</strong> empleados
+    </div>
+
+</div>
+
+<div class="panel-tabla">
+
+<div class="tabla-responsive">
+
+<table>
+<thead>
+<tr>
+<th>Empleado</th>
+<th>Código</th>
+<th>Documento</th>
+<th>Cargo</th>
+<th>Género</th>
+<th>Camisa</th>
+<th>Pantalón</th>
+<th>Calzado</th>
+<th>Estado</th>
+<th>Acciones</th>
+</tr>
+</thead>
+
+<tbody id="tablaEmpleadosBody"></tbody>
+
+</table>
+
+</div>
+</div>
+
+</section>
+
+
+<!-- ================= DOTACIÓN ================= -->
+
+<section id="seccion-dotacion" class="seccion">
+
+<div class="seccion-encabezado">
+
+<div>
+<span class="etiqueta-seccion">GESTIÓN DE DOTACIÓN</span>
+<h2>Dotación</h2>
+<p>Registra y consulta las entregas realizadas al personal.</p>
+</div>
+
+<button id="nuevaEntrega" class="btn-principal">
++ Registrar entrega
+</button>
+
+</div>
+
+<div class="barra-herramientas">
+
+<div class="campo-busqueda">
+<span>🔍</span>
+<input id="buscarEntrega"
+placeholder="Buscar empleado, elemento o centro de costo...">
+</div>
+
+</div>
+
+<div class="resumen-dotacion">
+
+<div>
+<span>📦</span>
+<div>
+<strong id="resumenTotalDotacion">0</strong>
+<small>Entregas registradas</small>
+</div>
+</div>
+
+<div>
+<span>🟢</span>
+<div>
+<strong id="resumenEntregadas">0</strong>
+<small>Entregadas</small>
+</div>
+</div>
+
+<div>
+<span>🟡</span>
+<div>
+<strong id="resumenPendientes">0</strong>
+<small>Pendientes</small>
+</div>
+</div>
+
+</div>
+
+
+<div class="panel-tabla">
+
+<div class="tabla-responsive">
+
+<table>
+<thead>
+<tr>
+<th>Fecha</th>
+<th>Empleado</th>
+<th>Elemento</th>
+<th>Talla</th>
+<th>Cantidad</th>
+<th>Centro costo</th>
+<th>Estado</th>
+<th>Acciones</th>
+</tr>
+</thead>
+
+<tbody id="tablaDotacionBody"></tbody>
+
+</table>
+
+</div>
+</div>
+
+</section>
+
+
+<!-- ================= INVENTARIO ================= -->
+
+<section id="seccion-inventario" class="seccion">
+
+<div class="seccion-encabezado">
+
+<div>
+<span class="etiqueta-seccion">ALMACÉN</span>
+<h2>Inventario</h2>
+<p>Consulta existencias, registra entradas y controla el stock.</p>
+</div>
+
+<button id="nuevaEntradaInventario" class="btn-principal">
++ Entrada de inventario
+</button>
+
+</div>
+
+
+<div class="inventario-panel">
+
+<div class="inventario-header">
+
+<div>
+<span class="etiqueta-seccion">CONTROL DE EXISTENCIAS</span>
+<h3>Inventario de dotación</h3>
+<p>Las existencias se actualizan automáticamente con las entradas y entregas.</p>
+</div>
+
+<button id="nuevaEntradaInventario2" class="btn-principal">
++ Entrada
+</button>
+
+</div>
+
+
+<div class="inventario-stats">
+
+<div class="inventario-stat">
+<div class="icon">📦</div>
+<div>
+<strong id="invReferencias">0</strong>
+<small>Referencias</small>
+</div>
+</div>
+
+<div class="inventario-stat">
+<div class="icon" style="background:#ecfdf5">🟢</div>
+<div>
+<strong id="invUnidades">0</strong>
+<small>Unidades disponibles</small>
+</div>
+</div>
+
+<div class="inventario-stat">
+<div class="icon" style="background:#fffbeb">⚠️</div>
+<div>
+<strong id="invBajo">0</strong>
+<small>Stock bajo</small>
+</div>
+</div>
+
+</div>
+
+
+<div class="inventario-filtros">
+
+    <div class="campo">
+        <label>Buscar elemento</label>
+        <input id="buscarInventario" placeholder="Camisa, pantalón, botas...">
+    </div>
+
+    <div class="campo">
+        <label>Género</label>
+        <select id="filtroGeneroInventario">
+            <option value="">Todos</option>
+            <option value="Mujer">Mujer</option>
+            <option value="Hombre">Hombre</option>
+            <option value="Unisex">Unisex</option>
+        </select>
+    </div>
+
+    <div class="campo">
+        <label>Talla</label>
+        <select id="filtroTallaInventario"><option value="">Todas</option></select>
+    </div>
+
+    <div class="campo">
+        <label>Estado</label>
+        <select id="filtroEstadoInventario">
+            <option value="">Todos</option>
+            <option value="Disponible">Disponible</option>
+            <option value="Stock bajo">Stock bajo</option>
+            <option value="Agotado">Agotado</option>
+        </select>
+    </div>
+
+</div>
+
+<div class="tabla-responsive tabla-inventario">
+
+<table>
+
+<thead>
+<tr>
+<th>Elemento</th>
+<th>Género</th>
+<th>Talla</th>
+<th>Stock actual</th>
+<th>Stock mínimo</th>
+<th>Estado</th>
+<th>Acciones</th>
+</tr>
+</thead>
+
+<tbody id="tablaInventarioBody"></tbody>
+
+</table>
+
+</div>
+
+</div>
+
+</section>
+
+
+<!-- ================= HISTORIAL ================= -->
+
+<section id="seccion-historial" class="seccion">
+
+<div class="seccion-encabezado">
+
+<div>
+<span class="etiqueta-seccion">REGISTRO</span>
+<h2>Historial</h2>
+<p>Consulta los movimientos realizados en el sistema.</p>
+</div>
+
+</div>
+
+<div class="panel-tabla">
+
+<div class="tabla-responsive">
+
+<table>
+<thead>
+<tr>
+<th>Fecha</th>
+<th>Acción</th>
+<th>Detalle</th>
+</tr>
+</thead>
+
+<tbody id="tablaHistorialBody"></tbody>
+
+</table>
+
+</div>
+</div>
+
+</section>
+
+
+<!-- ================= REPORTES ================= -->
+
+<section id="seccion-reportes" class="seccion">
+
+<div class="seccion-encabezado">
+
+<div>
+<span class="etiqueta-seccion">INFORMES</span>
+<h2>Reportes</h2>
+<p>Filtra, consulta, imprime o descarga la información.</p>
+</div>
+
+<div>
+<button id="descargarReporte" class="btn-secundario">
+↓ Descargar CSV
+</button>
+
+<button id="imprimirReporte" class="btn-principal">
+🖨 Imprimir
+</button>
+</div>
+
+</div>
+
+
+<div class="panel-filtros">
+
+<div class="campo">
+<label>Buscar</label>
+<input id="reporteBuscar"
+placeholder="Empleado, código o elemento...">
+</div>
+
+<div class="campo">
+<label>Estado</label>
+<select id="reporteEstado">
+<option value="">Todos</option>
+<option>Entregado</option>
+<option>Pendiente</option>
+</select>
+</div>
+
+<div class="campo">
+<label>Desde</label>
+<input type="date" id="reporteFechaInicio">
+</div>
+
+<div class="campo">
+<label>Hasta</label>
+<input type="date" id="reporteFechaFin">
+</div>
+
+<div>
+<button id="actualizarReporte" class="btn-principal">
+Aplicar
+</button>
+</div>
+
+</div>
+
+
+<div class="estadisticas-grid">
+
+<div class="tarjeta-estadistica">
+<div class="estadistica-icono azul">📦</div>
+<div class="estadistica-contenido">
+<span>Total entregas</span>
+<strong id="reporteTotalEntregas">0</strong>
+</div>
+</div>
+
+<div class="tarjeta-estadistica">
+<div class="estadistica-icono verde">🟢</div>
+<div class="estadistica-contenido">
+<span>Entregadas</span>
+<strong id="reporteEntregadas">0</strong>
+</div>
+</div>
+
+<div class="tarjeta-estadistica">
+<div class="estadistica-icono amarillo">🟡</div>
+<div class="estadistica-contenido">
+<span>Pendientes</span>
+<strong id="reportePendientes">0</strong>
+</div>
+</div>
+
+<div class="tarjeta-estadistica">
+<div class="estadistica-icono morado">👥</div>
+<div class="estadistica-contenido">
+<span>Empleados</span>
+<strong id="reporteEmpleados">0</strong>
+</div>
+</div>
+
+</div>
+
+
+<div class="panel-tabla">
+
+<div class="tabla-responsive">
+
+<table>
+<thead>
+<tr>
+<th>Fecha</th>
+<th>Empleado</th>
+<th>Código</th>
+<th>Elemento</th>
+<th>Talla</th>
+<th>Cantidad</th>
+<th>Centro costo</th>
+<th>Estado</th>
+</tr>
+</thead>
+
+<tbody id="tablaReporteBody"></tbody>
+
+</table>
+
+</div>
+</div>
+
+</section>
+
+
+<!-- ================= CONFIGURACIÓN ================= -->
+
+<section id="seccion-configuracion" class="seccion">
+
+<div class="seccion-encabezado">
+<div>
+<span class="etiqueta-seccion">SISTEMA</span>
+<h2>Configuración</h2>
+<p>Configuración general del sistema.</p>
+</div>
+</div>
+
+<div class="estadisticas-grid">
+
+<div class="tarjeta-estadistica">
+<div class="estadistica-icono azul">👤</div>
+<div class="estadistica-contenido">
+<span>Usuario actual</span>
+<strong style="font-size:18px">Adriana</strong>
+<small>Administradora</small>
+</div>
+</div>
+
+<div class="tarjeta-estadistica">
+<div class="estadistica-icono verde">💾</div>
+<div class="estadistica-contenido">
+<span>Almacenamiento</span>
+<strong style="font-size:18px">Local</strong>
+<small>Datos guardados en el navegador</small>
+</div>
+</div>
+
+</div>
+
+</section>
+
+</main>
+</div>
+
+
+<!-- ================= MODAL EMPLEADO ================= -->
+
+<div id="modalEmpleado" class="modal oculto">
+
+<div class="modal-contenido">
+
+<div class="modal-header">
+<div>
+<span class="etiqueta-seccion">PERSONAL</span>
+<h2 id="tituloModalEmpleado">Nuevo empleado</h2>
+</div>
+
+<button id="cerrarModalEmpleado" class="btn-cerrar-modal">×</button>
+</div>
+
+<form id="formEmpleado">
+
+<input type="hidden" id="empleadoId">
+
+<div class="form-grid">
+
+<div class="campo">
+<label>Código</label>
+<input id="empleadoCodigo" required placeholder="EMP001">
+</div>
+
+<div class="campo">
+<label>Documento</label>
+<input id="empleadoDocumento" required>
+</div>
+
+<div class="campo campo-ancho">
+<label>Nombre completo</label>
+<input id="empleadoNombre" required>
+</div>
+
+<div class="campo">
+<label>Cargo</label>
+<input id="empleadoCargo" required>
+</div>
+
+<div class="campo">
+<label>Área / Departamento</label>
+<input id="empleadoArea">
+</div>
+
+<div class="campo">
+<label>Género</label>
+<select id="empleadoGenero" required>
+<option value="">Seleccionar</option>
+<option>Mujer</option>
+<option>Hombre</option>
+</select>
+</div>
+
+<div class="campo">
+<label>Estado</label>
+<select id="empleadoEstado">
+<option>Activo</option>
+<option>Inactivo</option>
+</select>
+</div>
+
+<div class="campo">
+<label>Talla camisa</label>
+<select id="empleadoTalla">
+<option value="">Seleccionar</option>
+<option>XS</option><option>S</option><option>M</option>
+<option>L</option><option>XL</option><option>2XL</option>
+<option>3XL</option><option>4XL</option>
+</select>
+</div>
+
+<div class="campo">
+<label>Talla pantalón</label>
+<select id="empleadoTallaPantalon">
+<option value="">Seleccionar</option>
+<option>6</option><option>8</option><option>10</option>
+<option>12</option><option>14</option><option>16</option>
+<option>18</option><option>20</option><option>22</option>
+<option>24</option><option>26</option><option>28</option>
+<option>30</option><option>32</option><option>34</option>
+<option>36</option><option>38</option><option>40</option>
+<option>42</option><option>44</option>
+</select>
+</div>
+
+<div class="campo">
+<label>Talla calzado</label>
+<select id="empleadoTallaCalzado">
+<option value="">Seleccionar</option>
+<option>35</option><option>36</option><option>37</option>
+<option>38</option><option>39</option><option>40</option>
+<option>41</option><option>42</option><option>43</option>
+<option>44</option><option>45</option><option>46</option>
+</select>
+</div>
+
+</div>
+
+<div class="modal-botones">
+
+<button type="button" id="cancelarEmpleado"
+class="btn-secundario">Cancelar</button>
+
+<button class="btn-principal">
+Guardar empleado
+</button>
+
+</div>
+
+</form>
+</div>
+</div>
+
+
+<!-- ================= MODAL ENTREGA ================= -->
+
+<div id="modalEntrega" class="modal oculto">
+
+<div class="modal-contenido">
+
+<div class="modal-header">
+<div>
+<span class="etiqueta-seccion">DOTACIÓN</span>
+<h2>Registrar entrega</h2>
+</div>
+
+<button id="cerrarModalEntrega" class="btn-cerrar-modal">×</button>
+</div>
+
+<form id="formEntrega">
+
+<div class="form-grid">
+
+<div class="campo campo-ancho">
+<label>Empleado</label>
+<select id="entregaEmpleado" required></select>
+</div>
+
+<div class="campo">
+<label>Elemento</label>
+<select id="entregaElemento" required>
+<option value="">Seleccionar</option>
+<option>Camisa Administrativos</option>
+<option>Camisa Ventas Nutresa</option>
+<option>Camisa Ventas Cárnicos</option>
+<option>Camisa Ventas Meals</option>
+<option>Camisilla Verde</option>
+<option>Camisilla Gris</option>
+<option>Suéter Verde</option>
+<option>Buso Gris</option>
+<option>Pantalón</option>
+<option>Botas</option>
+<option>Chaqueta</option>
+<option>Otro</option>
+</select>
+</div>
+
+<div class="campo">
+<label>Centro de costo</label>
+<select id="entregaCentroCosto" required>
+<option value="">Seleccionar</option>
+<option>AA</option><option>BN</option><option>BC</option>
+<option>BM</option><option>VN</option><option>VC</option>
+<option>VM</option><option>LN</option><option>LC</option>
+<option>LM</option>
+</select>
+</div>
+
+<div class="campo">
+<label>Cantidad</label>
+<input type="number" id="entregaCantidad" min="1" value="1" required>
+</div>
+
+<div class="campo">
+<label>Talla</label>
+<select id="entregaTalla">
+<option value="">Seleccionar</option>
+</select>
+</div>
+
+<div class="campo">
+<label>Fecha</label>
+<input type="date" id="entregaFecha" required>
+</div>
+
+<div class="campo">
+<label>Estado</label>
+<select id="entregaEstado">
+<option>Entregado</option>
+<option>Pendiente</option>
+</select>
+</div>
+
+<div class="campo campo-ancho">
+<label>Observaciones</label>
+<textarea id="entregaObservaciones" rows="4"></textarea>
+</div>
+
+</div>
+
+<div class="modal-botones">
+
+<button type="button" id="cancelarEntrega"
+class="btn-secundario">Cancelar</button>
+
+<button class="btn-principal">
+Registrar entrega
+</button>
+
+</div>
+
+</form>
+</div>
+</div>
+
+
+<!-- ================= MODAL INVENTARIO ================= -->
+
+<div id="modalInventario" class="modal oculto">
+
+<div class="modal-contenido">
+
+<div class="modal-header">
+
+<div>
+<span class="etiqueta-seccion">ALMACÉN</span>
+<h2>Entrada de inventario</h2>
+</div>
+
+<button id="cerrarModalInventario"
+class="btn-cerrar-modal">×</button>
+
+</div>
+
+
+<form id="formInventario">
+
+<div class="form-grid">
+
+<div class="campo campo-ancho">
+<label>Elemento</label>
+
+<select id="inventarioElemento" required>
+<option value="">Seleccionar elemento</option>
+<option>Camisa Administrativos</option>
+<option>Camisa Ventas Nutresa</option>
+<option>Camisa Ventas Cárnicos</option>
+<option>Camisa Ventas Meals</option>
+<option>Camisilla Verde</option>
+<option>Camisilla Gris</option>
+<option>Suéter Verde</option>
+<option>Buso Gris</option>
+<option>Pantalón</option>
+<option>Botas</option>
+<option>Chaqueta</option>
+<option>Otro</option>
+</select>
+
+</div>
+
+<div class="campo">
+<label>Género</label>
+<select id="inventarioGenero" required>
+<option value="">Seleccionar</option>
+<option>Mujer</option>
+<option>Hombre</option>
+<option>Unisex</option>
+</select>
+</div>
+
+<div class="campo">
+<label>Talla</label>
+<select id="inventarioTalla" required>
+<option value="">Seleccionar</option>
+</select>
+</div>
+
+<div class="campo">
+<label>Cantidad a ingresar</label>
+<input id="inventarioCantidad"
+type="number"
+min="1"
+value="1"
+required>
+</div>
+
+
+<div class="campo">
+<label>Stock mínimo</label>
+<input id="inventarioMinimo"
+type="number"
+min="0"
+value="5"
+required>
+</div>
+
+
+<div class="campo">
+<label>Fecha</label>
+<input id="inventarioFecha" type="date" required>
+</div>
+
+
+<div class="campo campo-ancho">
+<label>Observaciones</label>
+<textarea id="inventarioObservaciones"
+rows="3"></textarea>
+</div>
+
+</div>
+
+
+<div class="modal-botones">
+
+<button type="button"
+id="cancelarInventario"
+class="btn-secundario">
+Cancelar
+</button>
+
+<button class="btn-principal">
+Registrar entrada
+</button>
+
+</div>
+
+</form>
+
+</div>
+</div>
+
+
+<script>
+
+/* =====================================================
+   CONTROL-DOTACIÓN
+   SISTEMA UNIFICADO
+===================================================== */
+
+const STORAGE = {
+    empleados: "cd_empleados",
+    entregas: "cd_entregas",
+    inventario: "cd_inventario",
+    historial: "cd_historial"
+};
+
+let empleados = JSON.parse(localStorage.getItem(STORAGE.empleados) || "[]");
+let entregas = JSON.parse(localStorage.getItem(STORAGE.entregas) || "[]");
+let inventario = JSON.parse(localStorage.getItem(STORAGE.inventario) || "[]");
+let historial = JSON.parse(localStorage.getItem(STORAGE.historial) || "[]");
+
+// Compatibilidad con datos antiguos: no inventamos género/talla;
+// los registros anteriores quedan como Unisex / Única hasta que se actualicen.
+empleados = empleados.map(e => ({...e, genero:e.genero||""}));
+inventario = inventario.map(i => ({...i, genero:i.genero||"Unisex", talla:i.talla||"Única"}));
+entregas = entregas.map(e => ({...e, genero:e.genero||"Unisex", talla:e.talla||"Única"}));
+
+const $ = id => document.getElementById(id);
+
+function guardar(){
+    localStorage.setItem(STORAGE.empleados, JSON.stringify(empleados));
+    localStorage.setItem(STORAGE.entregas, JSON.stringify(entregas));
+    localStorage.setItem(STORAGE.inventario, JSON.stringify(inventario));
+    localStorage.setItem(STORAGE.historial, JSON.stringify(historial));
+}
+
+function idNuevo(){
+    return Date.now().toString(36) + Math.random().toString(36).slice(2);
+}
+
+function fechaHoy(){
+    return new Date().toISOString().split("T")[0];
+}
+
+function escapar(texto){
+    return String(texto ?? "")
+        .replaceAll("&","&amp;")
+        .replaceAll("<","&lt;")
+        .replaceAll(">","&gt;")
+        .replaceAll('"',"&quot;")
+        .replaceAll("'","&#039;");
+}
+
+function registrarHistorial(accion, detalle){
+    historial.unshift({
+        id:idNuevo(),
+        fecha:new Date().toLocaleString("es-CO"),
+        accion,
+        detalle
+    });
+
+    if(historial.length > 300) historial.pop();
+
+    guardar();
+}
+
+
+/* =====================================================
+   LOGIN
+===================================================== */
+
+$("mostrarPassword").addEventListener("click",()=>{
+    const input=$("password");
+
+    input.type = input.type==="password"
+        ? "text"
+        : "password";
+});
+
+$("loginForm").addEventListener("submit",e=>{
+    e.preventDefault();
+
+    const usuario=$("usuario").value.trim();
+    const password=$("password").value;
+
+    /*
+      Usuario inicial:
+      admin
+      admin123
+
+      Puedes cambiarlo después.
+    */
+
+    if(
+        (usuario==="admin" && password==="admin123") ||
+        (usuario==="Adriana" && password==="1234")
+    ){
+        $("pantallaLogin").classList.add("oculto");
+        $("dashboard").classList.remove("oculto");
+
+        cargarTodo();
+    }else{
+        $("mensaje").textContent =
+            "Usuario o contraseña incorrectos.";
+    }
+});
+
+
+$("cerrarSesion").addEventListener("click",()=>{
+    $("dashboard").classList.add("oculto");
+    $("pantallaLogin").classList.remove("oculto");
+});
+
+
+/* =====================================================
+   NAVEGACIÓN
+===================================================== */
+
+document.querySelectorAll("[data-seccion]").forEach(btn=>{
+    btn.addEventListener("click",()=>{
+
+        const seccion=btn.dataset.seccion;
+
+        document.querySelectorAll(".seccion")
+            .forEach(s=>s.classList.remove("activa"));
+
+        $(seccion)?.classList.add("activa");
+
+        document.querySelectorAll(".menu-item")
+            .forEach(m=>m.classList.remove("activo"));
+
+        document
+            .querySelector(`.menu-item[data-seccion="${seccion}"]`)
+            ?.classList.add("activo");
+
+        const nombres={
+            "seccion-inicio":"Control de dotación",
+            "seccion-empleados":"Empleados",
+            "seccion-dotacion":"Dotación",
+            "seccion-inventario":"Inventario",
+            "seccion-historial":"Historial",
+            "seccion-reportes":"Reportes",
+            "seccion-configuracion":"Configuración"
+        };
+
+        $("tituloSeccion").textContent=nombres[seccion]||"Control de dotación";
+
+        $("sidebar").classList.remove("abierto");
+
+        cargarTodo();
+    });
+});
+
+
+$("btnMenuMovil").addEventListener("click",()=>{
+    $("sidebar").classList.toggle("abierto");
+});
+
+
+/* =====================================================
+   EMPLEADOS
+===================================================== */
+
+function abrirEmpleado(empleado=null){
+
+    $("formEmpleado").reset();
+
+    $("empleadoId").value=empleado?.id || "";
+
+    if(empleado){
+
+        $("tituloModalEmpleado").textContent="Editar empleado";
+
+        $("empleadoCodigo").value=empleado.codigo;
+        $("empleadoDocumento").value=empleado.documento;
+        $("empleadoNombre").value=empleado.nombre;
+        $("empleadoCargo").value=empleado.cargo;
+        $("empleadoArea").value=empleado.area||"";
+        $("empleadoEstado").value=empleado.estado;
+        $("empleadoGenero").value=empleado.genero||"";
+        $("empleadoTalla").value=empleado.talla||"";
+        $("empleadoTallaPantalon").value=empleado.pantalon||"";
+        $("empleadoTallaCalzado").value=empleado.calzado||"";
+
+    }else{
+        $("tituloModalEmpleado").textContent="Nuevo empleado";
+    }
+
+    $("modalEmpleado").classList.remove("oculto");
+}
+
+
+function cerrarEmpleado(){
+    $("modalEmpleado").classList.add("oculto");
+}
+
+$("nuevoEmpleado").addEventListener("click",()=>abrirEmpleado());
+
+$("cerrarModalEmpleado").addEventListener("click",cerrarEmpleado);
+$("cancelarEmpleado").addEventListener("click",cerrarEmpleado);
+
+
+$("formEmpleado").addEventListener("submit",e=>{
+    e.preventDefault();
+
+    const id=$("empleadoId").value;
+
+    const datos={
+        id:id||idNuevo(),
+        codigo:$("empleadoCodigo").value.trim(),
+        documento:$("empleadoDocumento").value.trim(),
+        nombre:$("empleadoNombre").value.trim(),
+        cargo:$("empleadoCargo").value.trim(),
+        area:$("empleadoArea").value.trim(),
+        estado:$("empleadoEstado").value,
+        genero:$("empleadoGenero").value,
+        talla:$("empleadoTalla").value,
+        pantalon:$("empleadoTallaPantalon").value,
+        calzado:$("empleadoTallaCalzado").value
+    };
+
+    const indice=empleados.findIndex(e=>e.id===id);
+
+    if(indice>=0){
+
+        empleados[indice]=datos;
+
+        registrarHistorial(
+            "Empleado actualizado",
+            `${datos.nombre} (${datos.codigo})`
+        );
+
+    }else{
+
+        empleados.push(datos);
+
+        registrarHistorial(
+            "Empleado creado",
+            `${datos.nombre} (${datos.codigo})`
+        );
+    }
+
+    guardar();
+    cerrarEmpleado();
+    cargarTodo();
+});
+
+
+function renderEmpleados(){
+
+    const buscar=$("buscarEmpleado").value.toLowerCase();
+
+    const lista=empleados.filter(e=>
+        `${e.nombre} ${e.codigo} ${e.documento} ${e.cargo}`
+        .toLowerCase()
+        .includes(buscar)
+    );
+
+    $("contadorEmpleadosTabla").textContent=lista.length;
+
+    $("tablaEmpleadosBody").innerHTML=lista.map(e=>`
+
+        <tr>
+
+            <td><strong>${escapar(e.nombre)}</strong></td>
+
+            <td>${escapar(e.codigo)}</td>
+
+            <td>${escapar(e.documento)}</td>
+
+            <td>${escapar(e.cargo)}</td>
+
+            <td><span class="badge-genero ${(e.genero||"Unisex").toLowerCase()}">${(e.genero||"Unisex")==="Mujer"?"👩":(e.genero||"Unisex")==="Hombre"?"👨":"👥"} ${escapar(e.genero||"Unisex")}</span></td>
+
+            <td>${escapar(e.talla||"-")}</td>
+
+            <td>${escapar(e.pantalon||"-")}</td>
+
+            <td>${escapar(e.calzado||"-")}</td>
+
+            <td>
+                <span class="estado ${e.estado==="Activo"?"activo":"inactivo"}">
+                    ${e.estado}
+                </span>
+            </td>
+
+            <td>
+                <div class="acciones">
+
+                    <button class="btn-mini"
+                    onclick="editarEmpleado('${e.id}')">
+                        ✏️
+                    </button>
+
+                    <button class="btn-mini"
+                    onclick="eliminarEmpleado('${e.id}')">
+                        🗑️
+                    </button>
+
+                </div>
+            </td>
+
+        </tr>
+
+    `).join("");
+
+}
+
+
+window.editarEmpleado=id=>{
+    const empleado=empleados.find(e=>e.id===id);
+    if(empleado) abrirEmpleado(empleado);
+};
+
+
+window.eliminarEmpleado=id=>{
+
+    const empleado=empleados.find(e=>e.id===id);
+
+    if(!empleado)return;
+
+    if(!confirm(`¿Eliminar a ${empleado.nombre}?`))return;
+
+    empleados=empleados.filter(e=>e.id!==id);
+
+    registrarHistorial(
+        "Empleado eliminado",
+        `${empleado.nombre} (${empleado.codigo})`
+    );
+
+    guardar();
+    cargarTodo();
+};
+
+
+$("buscarEmpleado").addEventListener("input",renderEmpleados);
+
+
+/* =====================================================
+   ENTREGAS
+===================================================== */
+
+function cargarSelectEmpleados(){
+
+    $("entregaEmpleado").innerHTML=`
+        <option value="">Seleccionar empleado</option>
+        ${
+            empleados
+            .filter(e=>e.estado==="Activo")
+            .map(e=>`
+                <option value="${e.id}">
+                    ${escapar(e.nombre)} - ${escapar(e.codigo)}
+                </option>
+            `).join("")
+        }
+    `;
+}
+
+
+function cargarTallas(){
+
+    const empleado=empleados.find(
+        e=>e.id===$("entregaEmpleado").value
+    );
+
+    const elemento=$("entregaElemento").value;
+
+    let tallas=[];
+
+    if(elemento.toLowerCase().includes("camisa") ||
+       elemento.toLowerCase().includes("camisilla") ||
+       elemento.toLowerCase().includes("suéter") ||
+       elemento.toLowerCase().includes("buso") ||
+       elemento.toLowerCase().includes("chaqueta")){
+
+        tallas=[
+            empleado?.talla,
+            "XS","S","M","L","XL","2XL","3XL","4XL"
+        ];
+
+    }else if(elemento==="Pantalón"){
+
+        tallas=[
+            empleado?.pantalon,
+            "6","8","10","12","14","16","18","20",
+            "22","24","26","28","30","32","34","36",
+            "38","40","42","44"
+        ];
+
+    }else if(elemento==="Botas"){
+
+        tallas=[
+            empleado?.calzado,
+            "35","36","37","38","39","40","41",
+            "42","43","44","45","46"
+        ];
+
+    }else{
+
+        tallas=["Única"];
+    }
+
+    tallas=[...new Set(tallas.filter(Boolean))];
+
+    $("entregaTalla").innerHTML=
+        `<option value="">Seleccionar</option>`+
+        tallas.map(t=>`<option>${t}</option>`).join("");
+
+    if(empleado){
+
+        if(elemento==="Pantalón")
+            $("entregaTalla").value=empleado.pantalon||"";
+
+        else if(elemento==="Botas")
+            $("entregaTalla").value=empleado.calzado||"";
+
+        else
+            $("entregaTalla").value=empleado.talla||"";
+    }
+}
+
+
+$("entregaEmpleado").addEventListener("change",cargarTallas);
+$("entregaElemento").addEventListener("change",cargarTallas);
+
+
+function abrirEntrega(){
+
+    $("formEntrega").reset();
+
+    $("entregaFecha").value=fechaHoy();
+
+    cargarSelectEmpleados();
+
+    $("modalEntrega").classList.remove("oculto");
+}
+
+
+function cerrarEntrega(){
+    $("modalEntrega").classList.add("oculto");
+}
+
+$("nuevaEntrega").addEventListener("click",abrirEntrega);
+$("cerrarModalEntrega").addEventListener("click",cerrarEntrega);
+$("cancelarEntrega").addEventListener("click",cerrarEntrega);
+
+
+/* 
+   ESTA ES LA PARTE CLAVE:
+   al entregar, el inventario se descuenta.
+*/
+
+$("formEntrega").addEventListener("submit",e=>{
+    e.preventDefault();
+
+    const empleado=empleados.find(
+        x=>x.id===$("entregaEmpleado").value
+    );
+
+    if(!empleado){
+        alert("Selecciona un empleado.");
+        return;
+    }
+
+    const elemento=$("entregaElemento").value;
+    const cantidad=Number($("entregaCantidad").value);
+    const estado=$("entregaEstado").value;
+
+    const talla=$("entregaTalla").value;
+    const genero=empleado.genero||"Unisex";
+
+    const existencia=inventario.find(x=>
+        x.elemento===elemento &&
+        x.talla===talla &&
+        (x.genero===genero || x.genero==="Unisex")
+    );
+
+    if(estado==="Entregado"){
+
+        if(!existencia){
+            alert(
+                `No existe inventario para ${elemento} / ${genero} / talla ${talla}.\n\n`+
+                `Registra primero la entrada de esa referencia.`
+            );
+            return;
+        }
+
+        if(existencia.stock<cantidad){
+            alert(
+                `No hay suficiente inventario de "${elemento}".\n\n`+
+                `Género: ${existencia.genero}\n`+
+                `Talla: ${existencia.talla}\n`+
+                `Stock actual: ${existencia.stock}\n`+
+                `Cantidad solicitada: ${cantidad}`
+            );
+            return;
+        }
+    }
+
+    const entrega={
+        id:idNuevo(),
+        fecha:$("entregaFecha").value,
+        empleadoId:empleado.id,
+        empleado:empleado.nombre,
+        codigo:empleado.codigo,
+        elemento,
+        genero,
+        talla,
+        cantidad,
+        centroCosto:$("entregaCentroCosto").value,
+        estado,
+        observaciones:$("entregaObservaciones").value.trim()
+    };
+
+    entregas.unshift(entrega);
+
+    if(estado==="Entregado"){
+
+        if(existencia){
+
+            existencia.stock-=cantidad;
+
+        }else{
+
+            inventario.push({
+                id:idNuevo(),
+                elemento,
+                genero,
+                talla,
+                stock:0,
+                minimo:5
+            });
+        }
+    }
+
+    registrarHistorial(
+        "Nueva entrega",
+        `${empleado.nombre}: ${cantidad} x ${elemento}`
+    );
+
+    guardar();
+    cerrarEntrega();
+    cargarTodo();
+});
+
+
+function renderEntregas(){
+
+    const buscar=$("buscarEntrega").value.toLowerCase();
+
+    const lista=entregas.filter(e=>
+        `${e.empleado} ${e.elemento} ${e.centroCosto}`
+        .toLowerCase()
+        .includes(buscar)
+    );
+
+    $("tablaDotacionBody").innerHTML=lista.map(e=>`
+
+        <tr>
+
+            <td>${e.fecha}</td>
+
+            <td><strong>${escapar(e.empleado)}</strong></td>
+
+            <td>${escapar(e.elemento)}</td>
+
+            <td>${escapar(e.talla||"-")}</td>
+
+            <td>${e.cantidad}</td>
+
+            <td>${e.centroCosto}</td>
+
+            <td>
+                <span class="estado ${
+                    e.estado==="Entregado"
+                    ?"entregado":"pendiente"
+                }">
+                    ${e.estado}
+                </span>
+            </td>
+
+            <td>
+
+                <button class="btn-mini"
+                onclick="eliminarEntrega('${e.id}')">
+                    🗑️
+                </button>
+
+            </td>
+
+        </tr>
+
+    `).join("");
+
+}
+
+
+window.eliminarEntrega=id=>{
+
+    const entrega=entregas.find(e=>e.id===id);
+
+    if(!entrega)return;
+
+    if(!confirm("¿Eliminar esta entrega?"))return;
+
+    /*
+      Si eliminamos una entrega que había descontado inventario,
+      devolvemos la cantidad al inventario.
+    */
+
+    if(entrega.estado==="Entregado"){
+
+        let item=inventario.find(x=>
+            x.elemento===entrega.elemento &&
+            x.talla===(entrega.talla||"Única") &&
+            (x.genero===(entrega.genero||"Unisex") || x.genero==="Unisex")
+        );
+
+        if(item){
+            item.stock+=Number(entrega.cantidad);
+        }
+    }
+
+    entregas=entregas.filter(e=>e.id!==id);
+
+    registrarHistorial(
+        "Entrega eliminada",
+        `${entrega.empleado}: ${entrega.elemento}`
+    );
+
+    guardar();
+    cargarTodo();
+};
+
+
+$("buscarEntrega").addEventListener("input",renderEntregas);
+
+
+/* =====================================================
+   INVENTARIO
+===================================================== */
+
+function cargarTallasInventario(){
+    const elemento=$("inventarioElemento").value;
+    let tallas=[];
+
+    if(elemento.toLowerCase().includes("camisa") || elemento.toLowerCase().includes("camisilla") || elemento.toLowerCase().includes("suéter") || elemento.toLowerCase().includes("buso") || elemento.toLowerCase().includes("chaqueta")){
+        tallas=["XS","S","M","L","XL","2XL","3XL","4XL"];
+    }else if(elemento==="Pantalón"){
+        tallas=["6","8","10","12","14","16","18","20","22","24","26","28","30","32","34","36","38","40","42","44"];
+    }else if(elemento==="Botas"){
+        tallas=["35","36","37","38","39","40","41","42","43","44","45","46"];
+    }else{
+        tallas=["Única"];
+    }
+
+    $("inventarioTalla").innerHTML=`<option value="">Seleccionar</option>`+tallas.map(t=>`<option>${t}</option>`).join("");
+}
+
+$("inventarioElemento").addEventListener("change",cargarTallasInventario);
+
+$("buscarInventario").addEventListener("input",renderInventario);
+$("filtroGeneroInventario").addEventListener("change",renderInventario);
+$("filtroTallaInventario").addEventListener("change",renderInventario);
+$("filtroEstadoInventario").addEventListener("change",renderInventario);
+
+function abrirInventario(){
+
+    $("formInventario").reset();
+    cargarTallasInventario();
+
+    $("inventarioFecha").value=fechaHoy();
+
+    $("modalInventario").classList.remove("oculto");
+}
+
+
+function cerrarInventario(){
+    $("modalInventario").classList.add("oculto");
+}
+
+
+$("nuevaEntradaInventario")
+.addEventListener("click",abrirInventario);
+
+$("nuevaEntradaInventario2")
+.addEventListener("click",abrirInventario);
+
+$("cerrarModalInventario")
+.addEventListener("click",cerrarInventario);
+
+$("cancelarInventario")
+.addEventListener("click",cerrarInventario);
+
+
+/* REGISTRAR ENTRADA */
+
+$("formInventario").addEventListener("submit",e=>{
+    e.preventDefault();
+
+    const elemento=$("inventarioElemento").value;
+    const genero=$("inventarioGenero").value;
+    const talla=$("inventarioTalla").value;
+    const cantidad=Number($("inventarioCantidad").value);
+    const minimo=Number($("inventarioMinimo").value);
+
+    let item=inventario.find(x=>
+        x.elemento===elemento &&
+        x.genero===genero &&
+        x.talla===talla
+    );
+
+    if(item){
+
+        item.stock+=cantidad;
+        item.minimo=minimo;
+
+    }else{
+
+        inventario.push({
+            id:idNuevo(),
+            elemento,
+            genero,
+            talla,
+            stock:cantidad,
+            minimo
+        });
+    }
+
+    registrarHistorial(
+        "Entrada de inventario",
+        `${cantidad} unidades de ${elemento} / ${genero} / talla ${talla}`
+    );
+
+    guardar();
+    cerrarInventario();
+    cargarTodo();
+});
+
+
+function estadoInventario(item){
+
+    if(item.stock<=0)
+        return ["Agotado","agotado"];
+
+    if(item.stock<=item.minimo)
+        return ["Stock bajo","bajo"];
+
+    return ["Disponible","disponible"];
+}
+
+
+function renderInventario(){
+
+    const buscar=($("buscarInventario")?.value||"").toLowerCase().trim();
+    const filtroGenero=$("filtroGeneroInventario")?.value||"";
+    const filtroTalla=$("filtroTallaInventario")?.value||"";
+    const filtroEstado=$("filtroEstadoInventario")?.value||"";
+
+    const tallas=[...new Set(inventario.map(i=>i.talla||"Única"))].sort((a,b)=>
+        String(a).localeCompare(String(b),undefined,{numeric:true})
+    );
+
+    if($("filtroTallaInventario")){
+        const actual=$("filtroTallaInventario").value;
+        $("filtroTallaInventario").innerHTML=`<option value="">Todas</option>`+
+            tallas.map(t=>`<option value="${escapar(t)}">${escapar(t)}</option>`).join("");
+        $("filtroTallaInventario").value=tallas.includes(actual)?actual:"";
+    }
+
+    const items=inventario
+        .map(item=>({...item,genero:item.genero||"Unisex",talla:item.talla||"Única"}))
+        .filter(item=>{
+            const [estado]=estadoInventario(item);
+            return (
+                (!buscar || `${item.elemento} ${item.genero} ${item.talla}`.toLowerCase().includes(buscar)) &&
+                (!filtroGenero || item.genero===filtroGenero) &&
+                (!filtroTalla || item.talla===filtroTalla) &&
+                (!filtroEstado || estado===filtroEstado)
+            );
+        })
+        .sort((a,b)=>`${a.elemento} ${a.genero} ${a.talla}`.localeCompare(`${b.elemento} ${b.genero} ${b.talla}`,undefined,{numeric:true}));
+
+    $("invReferencias").textContent=inventario.length;
+    $("invUnidades").textContent=inventario.reduce((s,i)=>s+Number(i.stock),0);
+    $("invBajo").textContent=inventario.filter(i=>Number(i.stock)<=Number(i.minimo)).length;
+
+    $("tablaInventarioBody").innerHTML=items.map(item=>{
+
+        const [estado,clase]=estadoInventario(item);
+        const claseGenero=(item.genero||"Unisex").toLowerCase();
+        const iconoGenero=item.genero==="Mujer"?"👩":item.genero==="Hombre"?"👨":"👥";
+
+        return `
+        <tr class="${clase==="bajo"?"stock-bajo-row":""}">
+            <td><strong>${escapar(item.elemento)}</strong></td>
+            <td><span class="badge-genero ${claseGenero}">${iconoGenero} ${escapar(item.genero)}</span></td>
+            <td><span class="talla-inventario">${escapar(item.talla)}</span></td>
+            <td>
+                <div class="stock-control">
+                    <button class="btn-stock" onclick="cambiarStock('${item.id}',-1)">−</button>
+                    <span class="stock-numero">${item.stock}</span>
+                    <button class="btn-stock" onclick="cambiarStock('${item.id}',1)">+</button>
+                </div>
+            </td>
+            <td>${item.minimo}</td>
+            <td><span class="estado ${clase}">${estado}</span></td>
+            <td>
+                <div class="acciones">
+                    <button class="btn-mini" onclick="editarMinimo('${item.id}')">⚙️</button>
+                    <button class="btn-mini" onclick="eliminarInventario('${item.id}')">🗑️</button>
+                </div>
+            </td>
+        </tr>`;
+    }).join("");
+}
+
+
+window.cambiarStock=(id,cantidad)=>{
+
+    const item=inventario.find(x=>x.id===id);
+
+    if(!item)return;
+
+    if(item.stock+cantidad<0)return;
+
+    item.stock+=cantidad;
+
+    registrarHistorial(
+        cantidad>0
+        ?"Ajuste de inventario +"
+        :"Ajuste de inventario -",
+        `${item.elemento}: ${cantidad>0?"+":""}${cantidad}`
+    );
+
+    guardar();
+    cargarTodo();
+};
+
+
+window.editarMinimo=id=>{
+
+    const item=inventario.find(x=>x.id===id);
+
+    if(!item)return;
+
+    const nuevo=prompt(
+        `Stock mínimo para ${item.elemento}:`,
+        item.minimo
+    );
+
+    if(nuevo===null)return;
+
+    const valor=Number(nuevo);
+
+    if(!Number.isFinite(valor)||valor<0){
+        alert("Ingresa un número válido.");
+        return;
+    }
+
+    item.minimo=valor;
+
+    registrarHistorial(
+        "Stock mínimo actualizado",
+        `${item.elemento}: ${valor}`
+    );
+
+    guardar();
+    cargarTodo();
+};
+
+
+window.eliminarInventario=id=>{
+
+    const item=inventario.find(x=>x.id===id);
+
+    if(!item)return;
+
+    if(!confirm(
+        `¿Eliminar "${item.elemento}" del inventario?`
+    ))return;
+
+    inventario=inventario.filter(x=>x.id!==id);
+
+    registrarHistorial(
+        "Elemento eliminado del inventario",
+        item.elemento
+    );
+
+    guardar();
+    cargarTodo();
+};
+
+
+/* =====================================================
+   INICIO / ESTADÍSTICAS
+===================================================== */
+
+function actualizarInicio(){
+
+    $("totalEmpleados").textContent=empleados.length;
+
+    $("totalEntregas").textContent=entregas.length;
+
+    $("totalPendientes").textContent=
+        entregas.filter(e=>e.estado==="Pendiente").length;
+
+    const mesActual=new Date().toISOString().slice(0,7);
+
+    $("totalMes").textContent=
+        entregas.filter(e=>
+            e.fecha?.startsWith(mesActual)
+        ).length;
+
+
+    $("resumenTotalDotacion").textContent=entregas.length;
+
+    $("resumenEntregadas").textContent=
+        entregas.filter(e=>e.estado==="Entregado").length;
+
+    $("resumenPendientes").textContent=
+        entregas.filter(e=>e.estado==="Pendiente").length;
+
+
+    $("tablaUltimasEntregasBody").innerHTML=
+        entregas.slice(0,8).map(e=>`
+
+        <tr>
+            <td>${e.fecha}</td>
+            <td>${escapar(e.empleado)}</td>
+            <td>${escapar(e.elemento)}</td>
+            <td>${e.cantidad}</td>
+            <td>${e.centroCosto}</td>
+            <td>
+                <span class="estado ${
+                    e.estado==="Entregado"
+                    ?"entregado":"pendiente"
+                }">
+                    ${e.estado}
+                </span>
+            </td>
+        </tr>
+
+    `).join("");
+
+    renderGrafica();
+}
+
+
+function renderGrafica(){
+
+    const ahora=new Date();
+
+    const meses=[];
+
+    for(let i=5;i>=0;i--){
+
+        const fecha=new Date(
+            ahora.getFullYear(),
+            ahora.getMonth()-i,
+            1
+        );
+
+        const key=
+            fecha.getFullYear()+"-"+
+            String(fecha.getMonth()+1).padStart(2,"0");
+
+        const nombre=fecha.toLocaleString(
+            "es-CO",
+            {month:"short"}
+        );
+
+        const total=entregas.filter(e=>
+            e.fecha?.startsWith(key)
+        ).length;
+
+        meses.push({nombre,total});
+    }
+
+    const max=Math.max(
+        1,
+        ...meses.map(x=>x.total)
+    );
+
+    $("graficoMes").innerHTML=
+        meses.map(m=>`
+
+        <div class="barra"
+             style="height:${Math.max(8,(m.total/max)*200)}px">
+
+            <strong>${m.total}</strong>
+            <span>${m.nombre}</span>
+
+        </div>
+
+    `).join("");
+
+
+    const conteo={};
+
+    entregas.forEach(e=>{
+        conteo[e.elemento]=
+            (conteo[e.elemento]||0)+Number(e.cantidad);
+    });
+
+    const colores=[
+        "#2563eb",
+        "#22c55e",
+        "#f59e0b",
+        "#8b5cf6",
+        "#ef4444"
+    ];
+
+    $("leyendaElementos").innerHTML=
+        Object.entries(conteo)
+        .slice(0,5)
+        .map(([nombre,total],i)=>`
+
+            <div>
+                <span class="punto"
+                style="background:${colores[i]}"></span>
+                ${escapar(nombre)} (${total})
+            </div>
+
+        `).join("") ||
+        `<div style="color:#94a3b8">
+            Aún no hay entregas
+        </div>`;
+}
+
+
+/* =====================================================
+   HISTORIAL
+===================================================== */
+
+function renderHistorial(){
+
+    $("tablaHistorialBody").innerHTML=
+        historial.map(h=>`
+
+        <tr>
+            <td>${escapar(h.fecha)}</td>
+            <td><strong>${escapar(h.accion)}</strong></td>
+            <td>${escapar(h.detalle)}</td>
+        </tr>
+
+    `).join("");
+}
+
+
+/* =====================================================
+   REPORTES
+===================================================== */
+
+function obtenerReporte(){
+
+    const buscar=$("reporteBuscar").value.toLowerCase();
+    const estado=$("reporteEstado").value;
+    const desde=$("reporteFechaInicio").value;
+    const hasta=$("reporteFechaFin").value;
+
+    return entregas.filter(e=>{
+
+        const texto=
+            `${e.empleado} ${e.codigo} ${e.elemento}`
+            .toLowerCase();
+
+        if(buscar && !texto.includes(buscar))
+            return false;
+
+        if(estado && e.estado!==estado)
+            return false;
+
+        if(desde && e.fecha<desde)
+            return false;
+
+        if(hasta && e.fecha>hasta)
+            return false;
+
+        return true;
+    });
+}
+
+
+function renderReporte(){
+
+    const lista=obtenerReporte();
+
+    $("reporteTotalEntregas").textContent=lista.length;
+
+    $("reporteEntregadas").textContent=
+        lista.filter(e=>e.estado==="Entregado").length;
+
+    $("reportePendientes").textContent=
+        lista.filter(e=>e.estado==="Pendiente").length;
+
+    $("reporteEmpleados").textContent=
+        new Set(lista.map(e=>e.empleadoId)).size;
+
+
+    $("tablaReporteBody").innerHTML=
+        lista.map(e=>`
+
+        <tr>
+
+            <td>${e.fecha}</td>
+            <td>${escapar(e.empleado)}</td>
+            <td>${escapar(e.codigo)}</td>
+            <td>${escapar(e.elemento)}</td>
+            <td>${escapar(e.talla||"-")}</td>
+            <td>${e.cantidad}</td>
+            <td>${e.centroCosto}</td>
+
+            <td>
+                <span class="estado ${
+                    e.estado==="Entregado"
+                    ?"entregado":"pendiente"
+                }">
+                    ${e.estado}
+                </span>
+            </td>
+
+        </tr>
+
+    `).join("");
+}
+
+
+$("actualizarReporte").addEventListener(
+    "click",
+    renderReporte
+);
+
+
+/* =====================================================
+   CSV
+===================================================== */
+
+$("descargarReporte").addEventListener("click",()=>{
+
+    const lista=obtenerReporte();
+
+    let csv=
+        "Fecha,Empleado,Codigo,Elemento,Talla,Cantidad,Centro costo,Estado\n";
+
+    lista.forEach(e=>{
+
+        csv+=[
+            e.fecha,
+            e.empleado,
+            e.codigo,
+            e.elemento,
+            e.talla||"",
+            e.cantidad,
+            e.centroCosto,
+            e.estado
+        ]
+        .map(v=>`"${String(v).replaceAll('"','""')}"`)
+        .join(",")+"\n";
+    });
+
+    const blob=new Blob(
+        ["\ufeff"+csv],
+        {type:"text/csv;charset=utf-8;"}
+    );
+
+    const url=URL.createObjectURL(blob);
+
+    const a=document.createElement("a");
+
+    a.href=url;
+    a.download="reporte-dotacion.csv";
+    a.click();
+
+    URL.revokeObjectURL(url);
+});
+
+
+$("imprimirReporte").addEventListener(
+    "click",
+    ()=>window.print()
+);
+
+
+/* =====================================================
+   BÚSQUEDA GLOBAL
+===================================================== */
+
+$("btnBuscarGlobal").addEventListener("click",buscarGlobal);
+
+$("buscarGlobal").addEventListener("keydown",e=>{
+    if(e.key==="Enter") buscarGlobal();
+});
+
+
+function buscarGlobal(){
+
+    const q=$("buscarGlobal").value.trim().toLowerCase();
+
+    if(!q)return;
+
+    const empleado=empleados.find(e=>
+        `${e.nombre} ${e.codigo} ${e.documento}`
+        .toLowerCase()
+        .includes(q)
+    );
+
+    if(empleado){
+
+        document
+        .querySelector('[data-seccion="seccion-empleados"]')
+        .click();
+
+        $("buscarEmpleado").value=q;
+        renderEmpleados();
+
+        return;
+    }
+
+    const entrega=entregas.find(e=>
+        `${e.empleado} ${e.elemento} ${e.centroCosto}`
+        .toLowerCase()
+        .includes(q)
+    );
+
+    if(entrega){
+
+        document
+        .querySelector('[data-seccion="seccion-dotacion"]')
+        .click();
+
+        $("buscarEntrega").value=q;
+        renderEntregas();
+
+        return;
+    }
+
+    const item=inventario.find(e=>
+        e.elemento.toLowerCase().includes(q)
+    );
+
+    if(item){
+
+        document
+        .querySelector('[data-seccion="seccion-inventario"]')
+        .click();
+
+        return;
+    }
+
+    alert("No se encontraron resultados.");
+}
+
+
+/* =====================================================
+   NOTIFICACIONES
+===================================================== */
+
+function actualizarNotificaciones(){
+
+    const bajo=inventario.filter(
+        x=>x.stock<=x.minimo
+    );
+
+    $("contadorNotificaciones").textContent=bajo.length;
+
+    $("notificacionesBtn").title=
+        bajo.length
+        ? `${bajo.length} elementos con stock bajo`
+        : "Sin alertas";
+}
+
+
+/* =====================================================
+   CARGAR TODO
+===================================================== */
+
+function cargarTodo(){
+
+    cargarSelectEmpleados();
+
+    renderEmpleados();
+    renderEntregas();
+    renderInventario();
+    renderHistorial();
+    renderReporte();
+
+    actualizarInicio();
+    actualizarNotificaciones();
+}
+
+
+/* =====================================================
+   FECHA INICIAL
+===================================================== */
+
+$("entregaFecha").value=fechaHoy();
+$("inventarioFecha").value=fechaHoy();
+
+
+/* =====================================================
+   DATOS INICIALES DE INVENTARIO
+   SOLO SE CREAN SI NO EXISTE INVENTARIO
+===================================================== */
+
+if(!localStorage.getItem(STORAGE.inventario)){
+
+    inventario=[
+        {
+            id:idNuevo(),
+            elemento:"Camisa Administrativos",
+            genero:"Unisex",
+            talla:"Única",
+            stock:0,
+            minimo:5
+        },
+        {
+            id:idNuevo(),
+            elemento:"Camisa Ventas Nutresa",
+            genero:"Unisex",
+            talla:"Única",
+            stock:0,
+            minimo:5
+        },
+        {
+            id:idNuevo(),
+            elemento:"Camisa Ventas Cárnicos",
+            genero:"Unisex",
+            talla:"Única",
+            stock:0,
+            minimo:5
+        },
+        {
+            id:idNuevo(),
+            elemento:"Camisa Ventas Meals",
+            genero:"Unisex",
+            talla:"Única",
+            stock:0,
+            minimo:5
+        },
+        {
+            id:idNuevo(),
+            elemento:"Camisilla Verde",
+            genero:"Unisex",
+            talla:"Única",
+            stock:0,
+            minimo:5
+        },
+        {
+            id:idNuevo(),
+            elemento:"Camisilla Gris",
+            genero:"Unisex",
+            talla:"Única",
+            stock:0,
+            minimo:5
+        },
+        {
+            id:idNuevo(),
+            elemento:"Suéter Verde",
+            genero:"Unisex",
+            talla:"Única",
+            stock:0,
+            minimo:5
+        },
+        {
+            id:idNuevo(),
+            elemento:"Buso Gris",
+            genero:"Unisex",
+            talla:"Única",
+            stock:0,
+            minimo:5
+        },
+        {
+            id:idNuevo(),
+            elemento:"Pantalón",
+            genero:"Unisex",
+            talla:"Única",
+            stock:0,
+            minimo:5
+        },
+        {
+            id:idNuevo(),
+            elemento:"Botas",
+            genero:"Unisex",
+            talla:"Única",
+            stock:0,
+            minimo:5
+        },
+        {
+            id:idNuevo(),
+            elemento:"Chaqueta",
+            genero:"Unisex",
+            talla:"Única",
+            stock:0,
+            minimo:5
+        }
+    ];
+
+    guardar();
+}
+
+</script>
+
+</body>
+</html>

@@ -1,0 +1,1164 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Control-Dotación</title>
+    <link rel="stylesheet" href="estilos.css">
+</head>
+<body>
+
+    <!-- LOGIN -->
+    <div id="pantallaLogin" class="pantalla-login">
+        <div class="login-card">
+            <div class="login-icono">👕</div>
+
+            <h1>Control-Dotación</h1>
+            <p class="login-subtitulo">Sistema de control de dotación</p>
+
+            <form id="loginForm">
+
+                <div class="campo">
+                    <label for="usuario">Usuario</label>
+                    <input
+                        type="text"
+                        id="usuario"
+                        autocomplete="username"
+                        required
+                    >
+                </div>
+
+                <div class="campo">
+                    <label for="password">Contraseña</label>
+
+                    <div class="campo-password">
+                        <input
+                            type="password"
+                            id="password"
+                            autocomplete="current-password"
+                            required
+                        >
+
+                        <button
+                            type="button"
+                            id="mostrarPassword"
+                            class="btn-mostrar-password"
+                        >
+                            Mostrar
+                        </button>
+                    </div>
+                </div>
+
+                <button
+                    type="submit"
+                    class="btn-principal btn-login"
+                >
+                    Iniciar sesión
+                </button>
+
+                <p id="mensaje" class="mensaje-login"></p>
+
+            </form>
+        </div>
+    </div>
+
+
+    <!-- DASHBOARD -->
+    <div id="dashboard" class="dashboard oculto">
+
+        <!-- SIDEBAR -->
+        <aside class="sidebar">
+
+            <div class="sidebar-logo">
+
+                <div class="logo-icono">👕</div>
+
+                <div>
+                    <h2>Control-Dotación</h2>
+                    <span>Gestión de dotación</span>
+                </div>
+
+            </div>
+
+
+            <!-- MENU -->
+            <nav class="menu">
+
+                <button
+                    type="button"
+                    class="menu-item activo"
+                    data-seccion="inicio"
+                >
+                    🏠
+                    <span>Inicio</span>
+                </button>
+
+                <button
+                    type="button"
+                    class="menu-item"
+                    data-seccion="empleados"
+                >
+                    👥
+                    <span>Empleados</span>
+                </button>
+
+                <button
+                    type="button"
+                    class="menu-item"
+                    data-seccion="dotacion"
+                >
+                    👕
+                    <span>Dotación</span>
+                </button>
+
+                <button
+                    type="button"
+                    class="menu-item"
+                    data-seccion="historial"
+                >
+                    📋
+                    <span>Historial</span>
+                </button>
+
+                <button
+                    type="button"
+                    class="menu-item"
+                    data-seccion="reportes"
+                >
+                    📊
+                    <span>Reportes</span>
+                </button>
+
+                <button
+                    type="button"
+                    class="menu-item"
+                    data-seccion="configuracion"
+                >
+                    ⚙️
+                    <span>Configuración</span>
+                </button>
+
+            </nav>
+
+
+            <div class="sidebar-footer">
+
+                <button
+                    type="button"
+                    id="cerrarSesion"
+                    class="btn-cerrar-sesion"
+                >
+                    Cerrar sesión
+                </button>
+
+            </div>
+
+        </aside>
+
+
+        <!-- CONTENIDO -->
+        <main class="contenido">
+
+
+            <!-- =========================
+                 INICIO
+            ========================== -->
+            <section
+                id="seccion-inicio"
+                class="seccion activa"
+            >
+
+                <div class="encabezado-seccion">
+
+                    <div>
+                        <h1>Inicio</h1>
+                        <p>Resumen general del sistema.</p>
+                    </div>
+
+                </div>
+
+
+                <div class="tarjetas-resumen">
+
+                    <div class="tarjeta-resumen">
+                        <div class="tarjeta-icono">👥</div>
+
+                        <div>
+                            <span>Empleados</span>
+                            <strong id="totalEmpleados">0</strong>
+                        </div>
+                    </div>
+
+
+                    <div class="tarjeta-resumen">
+                        <div class="tarjeta-icono">📦</div>
+
+                        <div>
+                            <span>Total entregas</span>
+                            <strong id="totalEntregas">0</strong>
+                        </div>
+                    </div>
+
+
+                    <div class="tarjeta-resumen">
+                        <div class="tarjeta-icono">⏳</div>
+
+                        <div>
+                            <span>Pendientes</span>
+                            <strong id="totalPendientes">0</strong>
+                        </div>
+                    </div>
+
+
+                    <div class="tarjeta-resumen">
+                        <div class="tarjeta-icono">📅</div>
+
+                        <div>
+                            <span>Entregas del mes</span>
+                            <strong id="totalMes">0</strong>
+                        </div>
+                    </div>
+
+                </div>
+
+
+                <div class="panel">
+
+                    <div class="panel-header">
+
+                        <div>
+                            <h2>Últimas entregas</h2>
+                            <p>Últimos registros realizados.</p>
+                        </div>
+
+                    </div>
+
+
+                    <div class="tabla-contenedor">
+
+                        <table>
+
+                            <thead>
+
+                                <tr>
+                                    <th>Fecha</th>
+                                    <th>Empleado</th>
+                                    <th>Elemento</th>
+                                    <th>Estado</th>
+                                </tr>
+
+                            </thead>
+
+                            <tbody id="ultimasEntregasBody"></tbody>
+
+                        </table>
+
+                    </div>
+
+                </div>
+
+            </section>
+
+
+            <!-- =========================
+                 EMPLEADOS
+            ========================== -->
+            <section
+                id="seccion-empleados"
+                class="seccion oculto"
+            >
+
+                <div class="encabezado-seccion">
+
+                    <div>
+                        <h1>Empleados</h1>
+                        <p>Administra los empleados y sus tallas.</p>
+                    </div>
+
+                    <button
+                        type="button"
+                        id="nuevoEmpleado"
+                        class="btn-principal"
+                    >
+                        + Nuevo empleado
+                    </button>
+
+                </div>
+
+
+                <div class="panel">
+
+                    <div class="barra-herramientas">
+
+                        <div class="buscador">
+
+                            <input
+                                type="search"
+                                id="buscarEmpleado"
+                                placeholder="Buscar por código, nombre, documento o cargo..."
+                            >
+
+                        </div>
+
+                    </div>
+
+
+                    <div class="tabla-contenedor">
+
+                        <table>
+
+                            <thead>
+
+                                <tr>
+                                    <th>Código</th>
+                                    <th>Foto</th>
+                                    <th>Nombre</th>
+                                    <th>Documento</th>
+                                    <th>Cargo</th>
+                                    <th>Tallas</th>
+                                    <th>Acciones</th>
+                                </tr>
+
+                            </thead>
+
+                            <tbody id="tablaEmpleadosBody"></tbody>
+
+                        </table>
+
+                    </div>
+
+                </div>
+
+            </section>
+
+
+            <!-- =========================
+                 DOTACION
+            ========================== -->
+            <section
+                id="seccion-dotacion"
+                class="seccion oculto"
+            >
+
+                <div class="encabezado-seccion">
+
+                    <div>
+                        <h1>Dotación</h1>
+                        <p>Registra y controla las entregas de dotación.</p>
+                    </div>
+
+                    <button
+                        type="button"
+                        id="nuevaEntrega"
+                        class="btn-principal"
+                    >
+                        + Nueva entrega
+                    </button>
+
+                </div>
+
+
+                <div class="panel">
+
+                    <div class="barra-herramientas">
+
+                        <div class="buscador">
+
+                            <input
+                                type="search"
+                                id="buscarEntrega"
+                                placeholder="Buscar por empleado, código, elemento o centro de costo..."
+                            >
+
+                        </div>
+
+                    </div>
+
+
+                    <div class="tabla-contenedor">
+
+                        <table>
+
+                            <thead>
+
+                                <tr>
+                                    <th>Código</th>
+                                    <th>Empleado</th>
+                                    <th>Elemento</th>
+                                    <th>Centro de costo</th>
+                                    <th>Cantidad</th>
+                                    <th>Talla</th>
+                                    <th>Fecha</th>
+                                    <th>Estado</th>
+                                    <th>Evidencia</th>
+                                    <th>Observaciones</th>
+                                    <th>Acciones</th>
+                                </tr>
+
+                            </thead>
+
+                            <tbody id="tablaDotacionBody"></tbody>
+
+                        </table>
+
+                    </div>
+
+                </div>
+
+            </section>
+
+
+            <!-- =========================
+                 HISTORIAL
+            ========================== -->
+            <section
+                id="seccion-historial"
+                class="seccion oculto"
+            >
+
+                <div class="encabezado-seccion">
+
+                    <div>
+                        <h1>Historial</h1>
+                        <p>Consulta el historial de movimientos de dotación.</p>
+                    </div>
+
+                </div>
+
+
+                <div class="panel">
+
+                    <div class="tabla-contenedor">
+
+                        <table>
+
+                            <thead>
+
+                                <tr>
+                                    <th>Fecha</th>
+                                    <th>Código</th>
+                                    <th>Empleado</th>
+                                    <th>Elemento</th>
+                                    <th>Centro de costo</th>
+                                    <th>Cantidad</th>
+                                    <th>Talla</th>
+                                    <th>Estado</th>
+                                </tr>
+
+                            </thead>
+
+                            <tbody id="tablaHistorialBody"></tbody>
+
+                        </table>
+
+                    </div>
+
+                </div>
+
+            </section>
+
+
+            <!-- =========================
+                 REPORTES
+            ========================== -->
+            <section
+                id="seccion-reportes"
+                class="seccion oculto"
+            >
+
+                <div class="encabezado-seccion">
+
+                    <div>
+                        <h1>Reportes</h1>
+                        <p>Genera reportes de las entregas de dotación.</p>
+                    </div>
+
+                </div>
+
+
+                <div class="panel">
+
+                    <div class="filtros-reporte">
+
+                        <div class="campo">
+
+                            <label for="reporteBuscar">
+                                Buscar
+                            </label>
+
+                            <input
+                                type="search"
+                                id="reporteBuscar"
+                                placeholder="Empleado, código, elemento o centro..."
+                            >
+
+                        </div>
+
+
+                        <div class="campo">
+
+                            <label for="reporteEstado">
+                                Estado
+                            </label>
+
+                            <select id="reporteEstado">
+
+                                <option value="">
+                                    Todos
+                                </option>
+
+                                <option value="Entregada">
+                                    Entregada
+                                </option>
+
+                                <option value="Pendiente">
+                                    Pendiente
+                                </option>
+
+                            </select>
+
+                        </div>
+
+
+                        <div class="campo">
+
+                            <label for="reporteFechaInicio">
+                                Fecha inicial
+                            </label>
+
+                            <input
+                                type="date"
+                                id="reporteFechaInicio"
+                            >
+
+                        </div>
+
+
+                        <div class="campo">
+
+                            <label for="reporteFechaFin">
+                                Fecha final
+                            </label>
+
+                            <input
+                                type="date"
+                                id="reporteFechaFin"
+                            >
+
+                        </div>
+
+
+                        <div class="acciones-filtros">
+
+                            <button
+                                type="button"
+                                id="actualizarReporte"
+                                class="btn-principal"
+                            >
+                                Actualizar
+                            </button>
+
+                            <button
+                                type="button"
+                                id="limpiarReporte"
+                                class="btn-secundario"
+                            >
+                                Limpiar
+                            </button>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+
+                <div class="tarjetas-resumen">
+
+                    <div class="tarjeta-resumen">
+
+                        <div class="tarjeta-icono">📦</div>
+
+                        <div>
+                            <span>Total entregas</span>
+                            <strong id="reporteTotalEntregas">0</strong>
+                        </div>
+
+                    </div>
+
+
+                    <div class="tarjeta-resumen">
+
+                        <div class="tarjeta-icono">✅</div>
+
+                        <div>
+                            <span>Entregadas</span>
+                            <strong id="reporteEntregadas">0</strong>
+                        </div>
+
+                    </div>
+
+
+                    <div class="tarjeta-resumen">
+
+                        <div class="tarjeta-icono">⏳</div>
+
+                        <div>
+                            <span>Pendientes</span>
+                            <strong id="reportePendientes">0</strong>
+                        </div>
+
+                    </div>
+
+
+                    <div class="tarjeta-resumen">
+
+                        <div class="tarjeta-icono">👥</div>
+
+                        <div>
+                            <span>Empleados</span>
+                            <strong id="reporteEmpleados">0</strong>
+                        </div>
+
+                    </div>
+
+                </div>
+
+
+                <div class="panel">
+
+                    <div class="panel-header">
+
+                        <div>
+
+                            <h2>Reporte de dotación</h2>
+
+                            <p>
+                                Detalle de las entregas según los filtros seleccionados.
+                            </p>
+
+                        </div>
+
+
+                        <div class="acciones-panel">
+
+                            <button
+                                type="button"
+                                id="descargarReporte"
+                                class="btn-secundario"
+                            >
+                                Descargar CSV
+                            </button>
+
+                            <button
+                                type="button"
+                                id="imprimirReporte"
+                                class="btn-principal"
+                            >
+                                Imprimir
+                            </button>
+
+                        </div>
+
+                    </div>
+
+
+                    <div class="tabla-contenedor">
+
+                        <table id="tablaReporte">
+
+                            <thead>
+
+                                <tr>
+                                    <th>Código</th>
+                                    <th>Empleado</th>
+                                    <th>Elemento</th>
+                                    <th>Centro de costo</th>
+                                    <th>Cantidad</th>
+                                    <th>Talla</th>
+                                    <th>Fecha</th>
+                                    <th>Estado</th>
+                                    <th>Evidencia</th>
+                                    <th>Observaciones</th>
+                                </tr>
+
+                            </thead>
+
+                            <tbody id="tablaReporteBody"></tbody>
+
+                        </table>
+
+                    </div>
+
+                </div>
+
+            </section>
+
+
+            <!-- =========================
+                 CONFIGURACION
+            ========================== -->
+            <section
+                id="seccion-configuracion"
+                class="seccion oculto"
+            >
+
+                <div class="encabezado-seccion">
+
+                    <div>
+                        <h1>Configuración</h1>
+                        <p>Opciones generales del sistema.</p>
+                    </div>
+
+                </div>
+
+
+                <div class="panel">
+
+                    <h2>Control-Dotación</h2>
+
+                    <p>
+                        Los datos se almacenan localmente en este navegador.
+                    </p>
+
+                </div>
+
+            </section>
+
+        </main>
+
+    </div>
+
+
+    <!-- =========================
+         MODAL EMPLEADO
+    ========================== -->
+    <div
+        id="modalEmpleado"
+        class="modal oculto"
+    >
+
+        <div class="modal-contenido">
+
+            <div class="modal-header">
+
+                <div>
+
+                    <h2 id="tituloModalEmpleado">
+                        Nuevo empleado
+                    </h2>
+
+                    <p>
+                        Registra los datos del empleado y sus tallas.
+                    </p>
+
+                </div>
+
+
+                <button
+                    type="button"
+                    id="cerrarModalEmpleado"
+                    class="btn-cerrar-modal"
+                >
+                    ✕
+                </button>
+
+            </div>
+
+
+            <form id="formEmpleado">
+
+                <input
+                    type="hidden"
+                    id="empleadoId"
+                >
+
+
+                <div class="form-grid">
+
+                    <div class="campo">
+
+                        <label for="empleadoCodigo">
+                            Código *
+                        </label>
+
+                        <input
+                            type="text"
+                            id="empleadoCodigo"
+                            required
+                        >
+
+                    </div>
+
+
+                    <div class="campo">
+
+                        <label for="empleadoNombre">
+                            Nombre completo *
+                        </label>
+
+                        <input
+                            type="text"
+                            id="empleadoNombre"
+                            required
+                        >
+
+                    </div>
+
+
+                    <div class="campo">
+
+                        <label for="empleadoDocumento">
+                            Documento *
+                        </label>
+
+                        <input
+                            type="text"
+                            id="empleadoDocumento"
+                            required
+                        >
+
+                    </div>
+
+
+                    <div class="campo">
+
+                        <label for="empleadoCargo">
+                            Cargo *
+                        </label>
+
+                        <input
+                            type="text"
+                            id="empleadoCargo"
+                            required
+                        >
+
+                    </div>
+
+
+                    <div class="campo campo-completo">
+
+                        <label for="empleadoFoto">
+                            Foto del empleado
+                        </label>
+
+                        <input
+                            type="file"
+                            id="empleadoFoto"
+                            accept="image/*"
+                        >
+
+                        <small>
+                            La foto se guarda para poder verla después.
+                        </small>
+
+                    </div>
+
+                </div>
+
+
+                <div class="seccion-formulario">
+
+                    <div class="titulo-formulario">
+
+                        <div>
+
+                            <h3>Tallas</h3>
+
+                            <p>
+                                Puedes registrar camisa, pantalón, botas u otros elementos.
+                            </p>
+
+                        </div>
+
+
+                        <button
+                            type="button"
+                            id="agregarTalla"
+                            class="btn-secundario"
+                        >
+                            + Agregar talla
+                        </button>
+
+                    </div>
+
+
+                    <div
+                        id="listaTallas"
+                        class="lista-tallas"
+                    ></div>
+
+                </div>
+
+
+                <div class="modal-footer">
+
+                    <button
+                        type="button"
+                        id="cancelarEmpleado"
+                        class="btn-secundario"
+                    >
+                        Cancelar
+                    </button>
+
+                    <button
+                        type="submit"
+                        class="btn-principal"
+                    >
+                        Guardar empleado
+                    </button>
+
+                </div>
+
+            </form>
+
+        </div>
+
+    </div>
+
+
+    <!-- =========================
+         MODAL DOTACION
+    ========================== -->
+    <div
+        id="modalEntrega"
+        class="modal oculto"
+    >
+
+        <div class="modal-contenido">
+
+            <div class="modal-header">
+
+                <div>
+
+                    <h2 id="tituloModalEntrega">
+                        Nueva entrega
+                    </h2>
+
+                    <p>
+                        Registra la entrega de un elemento de dotación.
+                    </p>
+
+                </div>
+
+
+                <button
+                    type="button"
+                    id="cerrarModalEntrega"
+                    class="btn-cerrar-modal"
+                >
+                    ✕
+                </button>
+
+            </div>
+
+
+            <form id="formEntrega">
+
+                <input
+                    type="hidden"
+                    id="entregaId"
+                >
+
+
+                <div class="form-grid">
+
+                    <div class="campo campo-completo">
+
+                        <label for="entregaEmpleado">
+                            Empleado *
+                        </label>
+
+                        <select
+                            id="entregaEmpleado"
+                            required
+                        >
+
+                            <option value="">
+                                Seleccione empleado
+                            </option>
+
+                        </select>
+
+                    </div>
+
+
+                    <div class="campo">
+
+                        <label for="entregaElemento">
+                            Elemento *
+                        </label>
+
+                        <select
+                            id="entregaElemento"
+                            required
+                        >
+
+                            <option value="">
+                                Seleccione elemento
+                            </option>
+
+                        </select>
+
+                    </div>
+
+
+                    <div class="campo">
+
+                        <label for="entregaCentroCosto">
+                            Centro de costo *
+                        </label>
+
+                        <select
+                            id="entregaCentroCosto"
+                            required
+                        >
+
+                            <option value="">
+                                Seleccione centro de costo
+                            </option>
+
+                        </select>
+
+                    </div>
+
+
+                    <div class="campo">
+
+                        <label for="entregaCantidad">
+                            Cantidad *
+                        </label>
+
+                        <input
+                            type="number"
+                            id="entregaCantidad"
+                            min="1"
+                            step="1"
+                            required
+                        >
+
+                    </div>
+
+
+                    <div class="campo">
+
+                        <label for="entregaTalla">
+                            Talla
+                        </label>
+
+                        <select id="entregaTalla">
+
+                            <option value="">
+                                Seleccione talla
+                            </option>
+
+                        </select>
+
+                    </div>
+
+
+                    <div class="campo">
+
+                        <label for="entregaFecha">
+                            Fecha *
+                        </label>
+
+                        <input
+                            type="date"
+                            id="entregaFecha"
+                            required
+                        >
+
+                    </div>
+
+
+                    <div class="campo">
+
+                        <label for="entregaEstado">
+                            Estado *
+                        </label>
+
+                        <select
+                            id="entregaEstado"
+                            required
+                        >
+
+                            <option value="Pendiente">
+                                Pendiente
+                            </option>
+
+                            <option value="Entregada">
+                                Entregada
+                            </option>
+
+                        </select>
+
+                    </div>
+
+
+                    <div class="campo campo-completo">
+
+                        <label for="entregaEvidencia">
+                            Foto de evidencia
+                        </label>
+
+                        <input
+                            type="file"
+                            id="entregaEvidencia"
+                            accept="image/*"
+                        >
+
+                        <small>
+                            La foto quedará guardada y podrá verse posteriormente.
+                        </small>
+
+                    </div>
+
+
+                    <div class="campo campo-completo">
+
+                        <label for="entregaObservaciones">
+                            Observaciones
+                        </label>
+
+                        <textarea
+                            id="entregaObservaciones"
+                            rows="4"
+                            placeholder="Escribe alguna observación..."
+                        ></textarea>
+
+                    </div>
+
+                </div>
+
+
+                <div class="modal-footer">
+
+                    <button
+                        type="button"
+                        id="cancelarEntrega"
+                        class="btn-secundario"
+                    >
+                        Cancelar
+                    </button>
+
+                    <button
+                        type="submit"
+                        class="btn-principal"
+                    >
+                        Guardar entrega
+                    </button>
+
+                </div>
+
+            </form>
+
+        </div>
+
+    </div>
+
+
+    <script src="script.js"></script>
+
+</body>
+</html>
