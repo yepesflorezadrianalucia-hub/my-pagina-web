@@ -1565,5 +1565,5 @@ document.addEventListener("DOMContentLoaded", () => {
 setInterval(() => {
   if (typeof renderEntregas === 'function') {
     renderEntregas();
-  }
+  } 
 }, 3000);
