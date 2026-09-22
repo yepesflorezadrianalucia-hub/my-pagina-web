@@ -3159,8 +3159,8 @@ Aplicar
 <div class="estadistica-icono verde">💾</div>
 <div class="estadistica-contenido">
 <span>Almacenamiento</span>
-<strong style="font-size:18px">Local</strong>
-<small>Datos guardados en el navegador</small>
+<strong style="font-size:18px">Supabase</strong>
+<small>Datos sincronizados con Supabase</small>
 </div>
 </div>
 
@@ -3508,1402 +3508,204 @@ Registrar entrada
 
 <script>
 
-/* =====================================================
-   CONTROL-DOTACIÓN
-   SISTEMA UNIFICADO
-===================================================== */
+"use strict";
 
-const STORAGE = {
-    empleados: "cd_empleados",
-    entregas: "cd_entregas",
-    inventario: "cd_inventario",
-    historial: "cd_historial"
-};
+/* ==================== SUPABASE ==================== */
+const SUPABASE_URL="https://zqnjhqchnzqailpqlfvb.supabase.co";
+const SUPABASE_ANON_KEY="PEGA_AQUI_TU_CLAVE_REAL_DE_SUPABASE";
+const db=typeof supabase!=="undefined" ? supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY) : null;
+const $=id=>document.getElementById(id);
+const STORAGE={sesion:"cd_sesion"};
+const STOCK_MINIMO_DEFECTO=5;
+let empleados=[],entregas=[],inventario=[],historial=[];
+let empleadoEditando=null;
 
-let empleados = JSON.parse(localStorage.getItem(STORAGE.empleados) || "[]");
-let entregas = JSON.parse(localStorage.getItem(STORAGE.entregas) || "[]");
-let inventario = JSON.parse(localStorage.getItem(STORAGE.inventario) || "[]");
-let historial = JSON.parse(localStorage.getItem(STORAGE.historial) || "[]");
-
-// Compatibilidad con datos antiguos: no inventamos género/talla;
-// los registros anteriores quedan como Unisex / Única hasta que se actualicen.
-empleados = empleados.map(e => ({...e, genero:e.genero||""}));
-inventario = inventario.map(i => ({...i, genero:i.genero||"Unisex", talla:i.talla||"Única"}));
-entregas = entregas.map(e => ({...e, genero:e.genero||"Unisex", talla:e.talla||"Única"}));
-
-const $ = id => document.getElementById(id);
-
-function guardar(){
-    localStorage.setItem(STORAGE.empleados, JSON.stringify(empleados));
-    localStorage.setItem(STORAGE.entregas, JSON.stringify(entregas));
-    localStorage.setItem(STORAGE.inventario, JSON.stringify(inventario));
-    localStorage.setItem(STORAGE.historial, JSON.stringify(historial));
+function escapar(v){return String(v??"").replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;").replaceAll('"',"&quot;").replaceAll("'","&#039;");}
+function fechaHoy(){return new Date().toISOString().split("T")[0];}
+function formatearFecha(v){if(!v)return"-";const s=String(v).slice(0,10),p=s.split("-");return p.length===3?`${p[2]}/${p[1]}/${p[0]}`:String(v);}
+function norm(v){return String(v??"").trim().toLowerCase();}
+function empleadoPorId(id){return empleados.find(e=>Number(e.id)===Number(id));}
+function nombreEmpleado(id){return empleadoPorId(id)?.nombre||"Empleado no encontrado";}
+function stockMin(item){return Number(item.minimo??STOCK_MINIMO_DEFECTO);}
+function estadoInventario(item){const s=Number(item.stock||0),m=stockMin(item);if(s<=0)return["Agotado","agotado"];if(s<=m)return["Stock bajo","bajo"];return["Disponible","disponible"];}
+function itemInventario(elemento,genero="Unisex",talla="Única"){
+  const e=norm(elemento),g=norm(genero),t=norm(talla);
+  return inventario.find(i=>norm(i.elemento)===e&&norm(i.talla||"Única")===t&&(norm(i.genero||"Unisex")===g||norm(i.genero||"Unisex")==="unisex"));
 }
 
-function idNuevo(){
-    return Date.now().toString(36) + Math.random().toString(36).slice(2);
+/* ==================== CARGA CLOUD ==================== */
+async function cargarDatos(){
+  if(!db){alert("Supabase no está cargado. Revisa el <script> de Supabase del HTML.");return false;}
+  try{
+    const [er,ir,tr]=await Promise.all([
+      db.from("empleados").select("*").order("id",{ascending:true}),
+      db.from("inventario").select("*").order("elemento",{ascending:true}),
+      db.from("entregas").select("*").order("fecha",{ascending:false})
+    ]);
+    if(er.error)throw er.error;if(ir.error)throw ir.error;if(tr.error)throw tr.error;
+    empleados=er.data||[];inventario=ir.data||[];entregas=tr.data||[];
+    console.log("✅ Supabase OK",{empleados:empleados.length,inventario:inventario.length,entregas:entregas.length});
+    return true;
+  }catch(e){console.error("Supabase:",e);alert("Error cargando Supabase:\n\n"+(e.message||e));return false;}
+}
+async function registrarHistorial(accion,detalle){
+  const registro={id:`local-${Date.now()}-${Math.random().toString(36).slice(2,7)}`,fecha:new Date().toISOString(),accion,detalle};
+  historial.unshift(registro);historial=historial.slice(0,300);renderHistorial();
 }
 
-function fechaHoy(){
-    return new Date().toISOString().split("T")[0];
+/* ==================== LOGIN / NAVEGACIÓN ==================== */
+function iniciarLogin(){
+  $("mostrarPassword")?.addEventListener("click",()=>{const i=$("password");if(i)i.type=i.type==="password"?"text":"password";});
+  $("loginForm")?.addEventListener("submit",async e=>{
+    e.preventDefault();const u=$("usuario")?.value.trim()||"",p=$("password")?.value||"";
+    if((u==="admin"&&p==="admin123")||(u==="Adriana"&&p==="1234")){
+      localStorage.setItem(STORAGE.sesion,"true");$("pantallaLogin")?.classList.add("oculto");$("dashboard")?.classList.remove("oculto");await cargarTodo();
+    }else if($("mensaje"))$("mensaje").textContent="Usuario o contraseña incorrectos.";
+  });
+  $("cerrarSesion")?.addEventListener("click",()=>{localStorage.removeItem(STORAGE.sesion);$("dashboard")?.classList.add("oculto");$("pantallaLogin")?.classList.remove("oculto");});
+}
+function iniciarNavegacion(){
+  document.querySelectorAll("[data-seccion]").forEach(btn=>btn.addEventListener("click",async()=>{
+    const s=btn.dataset.seccion;document.querySelectorAll(".seccion").forEach(x=>x.classList.remove("activa"));$(s)?.classList.add("activa");
+    document.querySelectorAll(".menu-item").forEach(x=>x.classList.remove("activo"));document.querySelector(`.menu-item[data-seccion="${s}"]`)?.classList.add("activo");
+    const tit={"seccion-inicio":"Control de dotación","seccion-empleados":"Empleados","seccion-dotacion":"Dotación","seccion-inventario":"Inventario","seccion-historial":"Historial","seccion-reportes":"Reportes","seccion-configuracion":"Configuración"};
+    if($("tituloSeccion"))$("tituloSeccion").textContent=tit[s]||"Control de dotación";$("sidebar")?.classList.remove("abierto");await cargarTodo();
+  }));
+  $("btnMenuMovil")?.addEventListener("click",()=>$("sidebar")?.classList.toggle("abierto"));
 }
 
-function escapar(texto){
-    return String(texto ?? "")
-        .replaceAll("&","&amp;")
-        .replaceAll("<","&lt;")
-        .replaceAll(">","&gt;")
-        .replaceAll('"',"&quot;")
-        .replaceAll("'","&#039;");
+/* ==================== EMPLEADOS ==================== */
+function abrirEmpleado(e=null){
+  const f=$("formEmpleado");if(!f)return;f.reset();empleadoEditando=e?.id||null;$("empleadoId").value=e?.id||"";
+  if($("tituloModalEmpleado"))$("tituloModalEmpleado").textContent=e?"Editar empleado":"Nuevo empleado";
+  if(e){$("empleadoCodigo").value=e.codigo||"";$("empleadoDocumento").value=e.cedula||"";$("empleadoNombre").value=e.nombre||"";$("empleadoCargo").value=e.cargo||"";$("empleadoArea").value=e.area||"";$("empleadoEstado").value=e.estado||"Activo";$("empleadoGenero").value=e.genero||"";$("empleadoTalla").value=e.talla_camiseta||"";$("empleadoTallaPantalon").value=e.talla_pantalon||"";$("empleadoTallaCalzado").value=e.talla_calzado||"";}else{$("empleadoEstado").value="Activo";}
+  $("modalEmpleado")?.classList.remove("oculto");
 }
-
-function registrarHistorial(accion, detalle){
-    historial.unshift({
-        id:idNuevo(),
-        fecha:new Date().toLocaleString("es-CO"),
-        accion,
-        detalle
-    });
-
-    if(historial.length > 300) historial.pop();
-
-    guardar();
+function cerrarEmpleado(){$("modalEmpleado")?.classList.add("oculto");empleadoEditando=null;}
+async function guardarEmpleado(ev){
+  ev.preventDefault();
+  const d={codigo:$("empleadoCodigo").value.trim(),cedula:$("empleadoDocumento").value.trim(),nombre:$("empleadoNombre").value.trim(),cargo:$("empleadoCargo").value.trim(),area:$("empleadoArea").value.trim()||null,estado:$("empleadoEstado").value||"Activo",genero:$("empleadoGenero").value||"Unisex",talla_camiseta:$("empleadoTalla").value||null,talla_pantalon:$("empleadoTallaPantalon").value||null,talla_calzado:$("empleadoTallaCalzado").value||null};
+  if(!d.codigo||!d.cedula||!d.nombre||!d.cargo){alert("Completa Código, Documento, Nombre y Cargo.");return;}
+  const r=empleadoEditando?await db.from("empleados").update(d).eq("id",empleadoEditando).select():await db.from("empleados").insert([d]).select();
+  if(r.error){alert("Error guardando empleado:\n\n"+r.error.message);return;}
+  await registrarHistorial(empleadoEditando?"Empleado actualizado":"Empleado creado",`${d.nombre} (${d.codigo})`);cerrarEmpleado();await cargarTodo();
 }
-
-
-/* =====================================================
-   LOGIN
-===================================================== */
-
-$("mostrarPassword").addEventListener("click",()=>{
-    const input=$("password");
-
-    input.type = input.type==="password"
-        ? "text"
-        : "password";
-});
-
-$("loginForm").addEventListener("submit",e=>{
-    e.preventDefault();
-
-    const usuario=$("usuario").value.trim();
-    const password=$("password").value;
-
-    /*
-      Usuario inicial:
-      admin
-      admin123
-
-      Puedes cambiarlo después.
-    */
-
-    if(
-        (usuario==="admin" && password==="admin123") ||
-        (usuario==="Adriana" && password==="1234")
-    ){
-        $("pantallaLogin").classList.add("oculto");
-        $("dashboard").classList.remove("oculto");
-
-        cargarTodo();
-    }else{
-        $("mensaje").textContent =
-            "Usuario o contraseña incorrectos.";
-    }
-});
-
-
-$("cerrarSesion").addEventListener("click",()=>{
-    $("dashboard").classList.add("oculto");
-    $("pantallaLogin").classList.remove("oculto");
-});
-
-
-/* =====================================================
-   NAVEGACIÓN
-===================================================== */
-
-document.querySelectorAll("[data-seccion]").forEach(btn=>{
-    btn.addEventListener("click",()=>{
-
-        const seccion=btn.dataset.seccion;
-
-        document.querySelectorAll(".seccion")
-            .forEach(s=>s.classList.remove("activa"));
-
-        $(seccion)?.classList.add("activa");
-
-        document.querySelectorAll(".menu-item")
-            .forEach(m=>m.classList.remove("activo"));
-
-        document
-            .querySelector(`.menu-item[data-seccion="${seccion}"]`)
-            ?.classList.add("activo");
-
-        const nombres={
-            "seccion-inicio":"Control de dotación",
-            "seccion-empleados":"Empleados",
-            "seccion-dotacion":"Dotación",
-            "seccion-inventario":"Inventario",
-            "seccion-historial":"Historial",
-            "seccion-reportes":"Reportes",
-            "seccion-configuracion":"Configuración"
-        };
-
-        $("tituloSeccion").textContent=nombres[seccion]||"Control de dotación";
-
-        $("sidebar").classList.remove("abierto");
-
-        cargarTodo();
-    });
-});
-
-
-$("btnMenuMovil").addEventListener("click",()=>{
-    $("sidebar").classList.toggle("abierto");
-});
-
-
-/* =====================================================
-   EMPLEADOS
-===================================================== */
-
-function abrirEmpleado(empleado=null){
-
-    $("formEmpleado").reset();
-
-    $("empleadoId").value=empleado?.id || "";
-
-    if(empleado){
-
-        $("tituloModalEmpleado").textContent="Editar empleado";
-
-        $("empleadoCodigo").value=empleado.codigo;
-        $("empleadoDocumento").value=empleado.documento;
-        $("empleadoNombre").value=empleado.nombre;
-        $("empleadoCargo").value=empleado.cargo;
-        $("empleadoArea").value=empleado.area||"";
-        $("empleadoEstado").value=empleado.estado;
-        $("empleadoGenero").value=empleado.genero||"";
-        $("empleadoTalla").value=empleado.talla||"";
-        $("empleadoTallaPantalon").value=empleado.pantalon||"";
-        $("empleadoTallaCalzado").value=empleado.calzado||"";
-
-    }else{
-        $("tituloModalEmpleado").textContent="Nuevo empleado";
-    }
-
-    $("modalEmpleado").classList.remove("oculto");
-}
-
-
-function cerrarEmpleado(){
-    $("modalEmpleado").classList.add("oculto");
-}
-
-$("nuevoEmpleado").addEventListener("click",()=>abrirEmpleado());
-
-$("cerrarModalEmpleado").addEventListener("click",cerrarEmpleado);
-$("cancelarEmpleado").addEventListener("click",cerrarEmpleado);
-
-
-$("formEmpleado").addEventListener("submit",e=>{
-    e.preventDefault();
-
-    const id=$("empleadoId").value;
-
-    const datos={
-        id:id||idNuevo(),
-        codigo:$("empleadoCodigo").value.trim(),
-        documento:$("empleadoDocumento").value.trim(),
-        nombre:$("empleadoNombre").value.trim(),
-        cargo:$("empleadoCargo").value.trim(),
-        area:$("empleadoArea").value.trim(),
-        estado:$("empleadoEstado").value,
-        genero:$("empleadoGenero").value,
-        talla:$("empleadoTalla").value,
-        pantalon:$("empleadoTallaPantalon").value,
-        calzado:$("empleadoTallaCalzado").value
-    };
-
-    const indice=empleados.findIndex(e=>e.id===id);
-
-    if(indice>=0){
-
-        empleados[indice]=datos;
-
-        registrarHistorial(
-            "Empleado actualizado",
-            `${datos.nombre} (${datos.codigo})`
-        );
-
-    }else{
-
-        empleados.push(datos);
-
-        registrarHistorial(
-            "Empleado creado",
-            `${datos.nombre} (${datos.codigo})`
-        );
-    }
-
-    guardar();
-    cerrarEmpleado();
-    cargarTodo();
-});
-
-
 function renderEmpleados(){
-
-    const buscar=$("buscarEmpleado").value.toLowerCase();
-
-    const lista=empleados.filter(e=>
-        `${e.nombre} ${e.codigo} ${e.documento} ${e.cargo}`
-        .toLowerCase()
-        .includes(buscar)
-    );
-
-    $("contadorEmpleadosTabla").textContent=lista.length;
-
-    $("tablaEmpleadosBody").innerHTML=lista.map(e=>`
-
-        <tr>
-
-            <td><strong>${escapar(e.nombre)}</strong></td>
-
-            <td>${escapar(e.codigo)}</td>
-
-            <td>${escapar(e.documento)}</td>
-
-            <td>${escapar(e.cargo)}</td>
-
-            <td><span class="badge-genero ${(e.genero||"Unisex").toLowerCase()}">${(e.genero||"Unisex")==="Mujer"?"👩":(e.genero||"Unisex")==="Hombre"?"👨":"👥"} ${escapar(e.genero||"Unisex")}</span></td>
-
-            <td>${escapar(e.talla||"-")}</td>
-
-            <td>${escapar(e.pantalon||"-")}</td>
-
-            <td>${escapar(e.calzado||"-")}</td>
-
-            <td>
-                <span class="estado ${e.estado==="Activo"?"activo":"inactivo"}">
-                    ${e.estado}
-                </span>
-            </td>
-
-            <td>
-                <div class="acciones">
-
-                    <button class="btn-mini"
-                    onclick="editarEmpleado('${e.id}')">
-                        ✏️
-                    </button>
-
-                    <button class="btn-mini"
-                    onclick="eliminarEmpleado('${e.id}')">
-                        🗑️
-                    </button>
-
-                </div>
-            </td>
-
-        </tr>
-
-    `).join("");
-
+  const b=$("tablaEmpleadosBody");if(!b)return;const q=$("buscarEmpleado")?.value.toLowerCase().trim()||"";
+  const a=empleados.filter(e=>`${e.nombre||""} ${e.codigo||""} ${e.cedula||""} ${e.cargo||""}`.toLowerCase().includes(q));
+  if($("contadorEmpleadosTabla"))$("contadorEmpleadosTabla").textContent=a.length;
+  b.innerHTML=a.map(e=>`<tr><td><strong>${escapar(e.nombre)}</strong></td><td>${escapar(e.codigo||"-")}</td><td>${escapar(e.cedula||"-")}</td><td>${escapar(e.cargo||"-")}</td><td>${e.genero==="Mujer"?"👩":e.genero==="Hombre"?"👨":"👥"} ${escapar(e.genero||"Unisex")}</td><td>${escapar(e.talla_camiseta||"-")}</td><td>${escapar(e.talla_pantalon||"-")}</td><td>${escapar(e.talla_calzado||"-")}</td><td><span class="estado ${e.estado==="Activo"?"activo":"inactivo"}">${escapar(e.estado||"Activo")}</span></td><td><div class="acciones"><button class="btn-mini" type="button" onclick="editarEmpleado('${e.id}')">✏️</button><button class="btn-mini" type="button" onclick="eliminarEmpleado('${e.id}')">🗑️</button></div></td></tr>`).join("");
 }
-
-
-window.editarEmpleado=id=>{
-    const empleado=empleados.find(e=>e.id===id);
-    if(empleado) abrirEmpleado(empleado);
+window.editarEmpleado=id=>{const e=empleadoPorId(id);if(e)abrirEmpleado(e);};
+window.eliminarEmpleado=async id=>{
+  const e=empleadoPorId(id);if(!e)return;if(entregas.some(x=>Number(x.empleado)===Number(id))){alert("No puedes eliminar este empleado porque tiene entregas registradas.");return;}if(!confirm(`¿Eliminar a ${e.nombre}?`))return;
+  const r=await db.from("empleados").delete().eq("id",id);if(r.error){alert("No se pudo eliminar:\n\n"+r.error.message);return;}await registrarHistorial("Empleado eliminado",`${e.nombre} (${e.codigo||e.cedula})`);await cargarTodo();
 };
 
-
-window.eliminarEmpleado=id=>{
-
-    const empleado=empleados.find(e=>e.id===id);
-
-    if(!empleado)return;
-
-    if(!confirm(`¿Eliminar a ${empleado.nombre}?`))return;
-
-    empleados=empleados.filter(e=>e.id!==id);
-
-    registrarHistorial(
-        "Empleado eliminado",
-        `${empleado.nombre} (${empleado.codigo})`
-    );
-
-    guardar();
-    cargarTodo();
-};
-
-
-$("buscarEmpleado").addEventListener("input",renderEmpleados);
-
-
-/* =====================================================
-   ENTREGAS
-===================================================== */
-
+/* ==================== SELECTS Y TALLAS ==================== */
 function cargarSelectEmpleados(){
-
-    $("entregaEmpleado").innerHTML=`
-        <option value="">Seleccionar empleado</option>
-        ${
-            empleados
-            .filter(e=>e.estado==="Activo")
-            .map(e=>`
-                <option value="${e.id}">
-                    ${escapar(e.nombre)} - ${escapar(e.codigo)}
-                </option>
-            `).join("")
-        }
-    `;
+  const s=$("entregaEmpleado");if(!s)return;const actual=s.value;s.innerHTML=`<option value="">Seleccionar empleado</option>`+empleados.filter(e=>(e.estado||"Activo")==="Activo").map(e=>`<option value="${e.id}">${escapar(e.nombre)} - ${escapar(e.codigo||e.cedula||"")}</option>`).join("");if(actual)s.value=actual;
 }
-
-
+function tallasElemento(el){const e=norm(el);if(e.includes("camisa")||e.includes("camisilla")||e.includes("sueter")||e.includes("suéter")||e.includes("buso")||e.includes("chaqueta"))return["XS","S","M","L","XL","2XL","3XL","4XL"];if(e==="pantalon"||e==="pantalón")return["6","8","10","12","14","16","18","20","22","24","26","28","30","32","34","36","38","40","42","44"];if(e==="botas")return["35","36","37","38","39","40","41","42","43","44","45","46"];return["Única"];}
 function cargarTallas(){
-
-    const empleado=empleados.find(
-        e=>e.id===$("entregaEmpleado").value
-    );
-
-    const elemento=$("entregaElemento").value;
-
-    let tallas=[];
-
-    if(elemento.toLowerCase().includes("camisa") ||
-       elemento.toLowerCase().includes("camisilla") ||
-       elemento.toLowerCase().includes("suéter") ||
-       elemento.toLowerCase().includes("buso") ||
-       elemento.toLowerCase().includes("chaqueta")){
-
-        tallas=[
-            empleado?.talla,
-            "XS","S","M","L","XL","2XL","3XL","4XL"
-        ];
-
-    }else if(elemento==="Pantalón"){
-
-        tallas=[
-            empleado?.pantalon,
-            "6","8","10","12","14","16","18","20",
-            "22","24","26","28","30","32","34","36",
-            "38","40","42","44"
-        ];
-
-    }else if(elemento==="Botas"){
-
-        tallas=[
-            empleado?.calzado,
-            "35","36","37","38","39","40","41",
-            "42","43","44","45","46"
-        ];
-
-    }else{
-
-        tallas=["Única"];
-    }
-
-    tallas=[...new Set(tallas.filter(Boolean))];
-
-    $("entregaTalla").innerHTML=
-        `<option value="">Seleccionar</option>`+
-        tallas.map(t=>`<option>${t}</option>`).join("");
-
-    if(empleado){
-
-        if(elemento==="Pantalón")
-            $("entregaTalla").value=empleado.pantalon||"";
-
-        else if(elemento==="Botas")
-            $("entregaTalla").value=empleado.calzado||"";
-
-        else
-            $("entregaTalla").value=empleado.talla||"";
-    }
+  const e=empleadoPorId($("entregaEmpleado")?.value),el=$("entregaElemento")?.value||"",s=$("entregaTalla");if(!s)return;
+  const a=[...new Set([...tallasElemento(el),e?.talla_camiseta,e?.talla_pantalon,e?.talla_calzado].filter(Boolean))];const actual=s.value;s.innerHTML=`<option value="">Seleccionar</option>`+a.map(t=>`<option value="${escapar(t)}">${escapar(t)}</option>`).join("");
+  if(actual&&a.includes(actual)){s.value=actual;return;}if(e){const t=norm(el);s.value=(t==="pantalon"||t==="pantalón")?e.talla_pantalon:t==="botas"?e.talla_calzado:e.talla_camiseta||"";}
 }
-
-
-$("entregaEmpleado").addEventListener("change",cargarTallas);
-$("entregaElemento").addEventListener("change",cargarTallas);
-
-
-function abrirEntrega(){
-
-    $("formEntrega").reset();
-
-    $("entregaFecha").value=fechaHoy();
-
-    cargarSelectEmpleados();
-
-    $("modalEntrega").classList.remove("oculto");
-}
-
-
-function cerrarEntrega(){
-    $("modalEntrega").classList.add("oculto");
-}
-
-$("nuevaEntrega").addEventListener("click",abrirEntrega);
-$("cerrarModalEntrega").addEventListener("click",cerrarEntrega);
-$("cancelarEntrega").addEventListener("click",cerrarEntrega);
-
-
-/* 
-   ESTA ES LA PARTE CLAVE:
-   al entregar, el inventario se descuenta.
-*/
-
-$("formEntrega").addEventListener("submit",e=>{
-    e.preventDefault();
-
-    const empleado=empleados.find(
-        x=>x.id===$("entregaEmpleado").value
-    );
-
-    if(!empleado){
-        alert("Selecciona un empleado.");
-        return;
-    }
-
-    const elemento=$("entregaElemento").value;
-    const cantidad=Number($("entregaCantidad").value);
-    const estado=$("entregaEstado").value;
-
-    const talla=$("entregaTalla").value;
-    const genero=empleado.genero||"Unisex";
-
-    const existencia=inventario.find(x=>
-        x.elemento===elemento &&
-        x.talla===talla &&
-        (x.genero===genero || x.genero==="Unisex")
-    );
-
-    if(estado==="Entregado"){
-
-        if(!existencia){
-            alert(
-                `No existe inventario para ${elemento} / ${genero} / talla ${talla}.\n\n`+
-                `Registra primero la entrada de esa referencia.`
-            );
-            return;
-        }
-
-        if(existencia.stock<cantidad){
-            alert(
-                `No hay suficiente inventario de "${elemento}".\n\n`+
-                `Género: ${existencia.genero}\n`+
-                `Talla: ${existencia.talla}\n`+
-                `Stock actual: ${existencia.stock}\n`+
-                `Cantidad solicitada: ${cantidad}`
-            );
-            return;
-        }
-    }
-
-    const entrega={
-        id:idNuevo(),
-        fecha:$("entregaFecha").value,
-        empleadoId:empleado.id,
-        empleado:empleado.nombre,
-        codigo:empleado.codigo,
-        elemento,
-        genero,
-        talla,
-        cantidad,
-        centroCosto:$("entregaCentroCosto").value,
-        estado,
-        observaciones:$("entregaObservaciones").value.trim()
-    };
-
-    entregas.unshift(entrega);
-
-    if(estado==="Entregado"){
-
-        if(existencia){
-
-            existencia.stock-=cantidad;
-
-        }else{
-
-            inventario.push({
-                id:idNuevo(),
-                elemento,
-                genero,
-                talla,
-                stock:0,
-                minimo:5
-            });
-        }
-    }
-
-    registrarHistorial(
-        "Nueva entrega",
-        `${empleado.nombre}: ${cantidad} x ${elemento}`
-    );
-
-    guardar();
-    cerrarEntrega();
-    cargarTodo();
-});
-
-
-function renderEntregas(){
-
-    const buscar=$("buscarEntrega").value.toLowerCase();
-
-    const lista=entregas.filter(e=>
-        `${e.empleado} ${e.elemento} ${e.centroCosto}`
-        .toLowerCase()
-        .includes(buscar)
-    );
-
-    $("tablaDotacionBody").innerHTML=lista.map(e=>`
-
-        <tr>
-
-            <td>${e.fecha}</td>
-
-            <td><strong>${escapar(e.empleado)}</strong></td>
-
-            <td>${escapar(e.elemento)}</td>
-
-            <td>${escapar(e.talla||"-")}</td>
-
-            <td>${e.cantidad}</td>
-
-            <td>${e.centroCosto}</td>
-
-            <td>
-                <span class="estado ${
-                    e.estado==="Entregado"
-                    ?"entregado":"pendiente"
-                }">
-                    ${e.estado}
-                </span>
-            </td>
-
-            <td>
-
-                <button class="btn-mini"
-                onclick="eliminarEntrega('${e.id}')">
-                    🗑️
-                </button>
-
-            </td>
-
-        </tr>
-
-    `).join("");
-
-}
-
-
-window.eliminarEntrega=id=>{
-
-    const entrega=entregas.find(e=>e.id===id);
-
-    if(!entrega)return;
-
-    if(!confirm("¿Eliminar esta entrega?"))return;
-
-    /*
-      Si eliminamos una entrega que había descontado inventario,
-      devolvemos la cantidad al inventario.
-    */
-
-    if(entrega.estado==="Entregado"){
-
-        let item=inventario.find(x=>
-            x.elemento===entrega.elemento &&
-            x.talla===(entrega.talla||"Única") &&
-            (x.genero===(entrega.genero||"Unisex") || x.genero==="Unisex")
-        );
-
-        if(item){
-            item.stock+=Number(entrega.cantidad);
-        }
-    }
-
-    entregas=entregas.filter(e=>e.id!==id);
-
-    registrarHistorial(
-        "Entrega eliminada",
-        `${entrega.empleado}: ${entrega.elemento}`
-    );
-
-    guardar();
-    cargarTodo();
-};
-
-
-$("buscarEntrega").addEventListener("input",renderEntregas);
-
-
-/* =====================================================
-   INVENTARIO
-===================================================== */
-
 function cargarTallasInventario(){
-    const elemento=$("inventarioElemento").value;
-    let tallas=[];
-
-    if(elemento.toLowerCase().includes("camisa") || elemento.toLowerCase().includes("camisilla") || elemento.toLowerCase().includes("suéter") || elemento.toLowerCase().includes("buso") || elemento.toLowerCase().includes("chaqueta")){
-        tallas=["XS","S","M","L","XL","2XL","3XL","4XL"];
-    }else if(elemento==="Pantalón"){
-        tallas=["6","8","10","12","14","16","18","20","22","24","26","28","30","32","34","36","38","40","42","44"];
-    }else if(elemento==="Botas"){
-        tallas=["35","36","37","38","39","40","41","42","43","44","45","46"];
-    }else{
-        tallas=["Única"];
-    }
-
-    $("inventarioTalla").innerHTML=`<option value="">Seleccionar</option>`+tallas.map(t=>`<option>${t}</option>`).join("");
+  const s=$("inventarioTalla");if(!s)return;const a=tallasElemento($("inventarioElemento")?.value||""),actual=s.value;s.innerHTML=`<option value="">Seleccionar</option>`+a.map(t=>`<option value="${escapar(t)}">${escapar(t)}</option>`).join("");if(actual&&a.includes(actual))s.value=actual;
 }
 
-$("inventarioElemento").addEventListener("change",cargarTallasInventario);
-
-$("buscarInventario").addEventListener("input",renderInventario);
-$("filtroGeneroInventario").addEventListener("change",renderInventario);
-$("filtroTallaInventario").addEventListener("change",renderInventario);
-$("filtroEstadoInventario").addEventListener("change",renderInventario);
-
-function abrirInventario(){
-
-    $("formInventario").reset();
-    cargarTallasInventario();
-
-    $("inventarioFecha").value=fechaHoy();
-
-    $("modalInventario").classList.remove("oculto");
+/* ==================== ENTREGAS ==================== */
+function abrirEntrega(){$("formEntrega")?.reset();if($("entregaFecha"))$("entregaFecha").value=fechaHoy();if($("entregaEstado"))$("entregaEstado").value="Entregado";cargarSelectEmpleados();cargarTallas();$("modalEntrega")?.classList.remove("oculto");}
+function cerrarEntrega(){$("modalEntrega")?.classList.add("oculto");}
+async function guardarEntrega(ev){
+  ev.preventDefault();const empleadoId=Number($("entregaEmpleado")?.value||0),empleado=empleadoPorId(empleadoId),elemento=$("entregaElemento")?.value||"",talla=$("entregaTalla")?.value||"Única",cantidad=Number($("entregaCantidad")?.value||0),centro=$("entregaCentroCosto")?.value||null,estado=$("entregaEstado")?.value||"Entregado",fecha=$("entregaFecha")?.value||fechaHoy(),comentarios=$("entregaObservaciones")?.value.trim()||null;
+  if(!empleado||!elemento||!Number.isInteger(cantidad)||cantidad<1){alert("Completa correctamente la entrega.");return;}
+  let item=itemInventario(elemento,empleado.genero||"Unisex",talla);if(!item)item=itemInventario(elemento,"Unisex",talla);
+  if(estado==="Entregado"){
+    if(!item){alert(`No existe inventario para ${elemento} / talla ${talla}.\n\nRegistra primero la entrada de esa referencia.`);return;}
+    if(Number(item.stock)<cantidad){alert(`No hay suficiente stock.\n\nDisponible: ${item.stock}\nSolicitado: ${cantidad}`);return;}
+  }
+  const d={empleado:empleado.id,elemento,cantidades:cantidad,fecha,talla,centro_costo:centro,estado,comentarios};
+  const r=await db.from("entregas").insert([d]).select();if(r.error){alert("Error registrando entrega:\n\n"+r.error.message);return;}
+  if(estado==="Entregado"&&item){const rs=await db.from("inventario").update({stock:Number(item.stock)-cantidad}).eq("id",item.id);if(rs.error){alert("La entrega se guardó, pero no se pudo actualizar el stock:\n\n"+rs.error.message);return;}}
+  await registrarHistorial("Nueva entrega",`${empleado.nombre}: ${cantidad} x ${elemento}`);cerrarEntrega();await cargarTodo();
 }
-
-
-function cerrarInventario(){
-    $("modalInventario").classList.add("oculto");
+function renderEntregas(){
+  const b=$("tablaDotacionBody");if(!b)return;const q=$("buscarEntrega")?.value.toLowerCase().trim()||"";
+  const a=entregas.filter(e=>{const emp=empleadoPorId(e.empleado);return`${emp?.nombre||""} ${emp?.codigo||""} ${emp?.cedula||""} ${e.elemento||""} ${e.centro_costo||""}`.toLowerCase().includes(q);});
+  b.innerHTML=a.map(e=>{const st=e.estado||"Entregado";return`<tr><td>${formatearFecha(e.fecha)}</td><td><strong>${escapar(nombreEmpleado(e.empleado))}</strong></td><td>${escapar(e.elemento)}</td><td>${escapar(e.talla||"-")}</td><td>${Number(e.cantidades||0)}</td><td>${escapar(e.centro_costo||"-")}</td><td><span class="estado ${st==="Entregado"?"entregado":"pendiente"}">${escapar(st)}</span></td><td><button class="btn-mini" type="button" onclick="eliminarEntrega('${e.id}')">🗑️</button></td></tr>`;}).join("");
 }
+window.eliminarEntrega=async id=>{
+  const e=entregas.find(x=>Number(x.id)===Number(id));if(!e)return;if(!confirm("¿Eliminar esta entrega?"))return;
+  if((e.estado||"Entregado")==="Entregado"){
+    const generoEmpleado=empleadoPorId(e.empleado)?.genero||"Unisex";
+    let item=itemInventario(e.elemento,generoEmpleado,e.talla||"Única");if(!item)item=itemInventario(e.elemento,"Unisex",e.talla||"Única");
+    if(item){const r=await db.from("inventario").update({stock:Number(item.stock||0)+Number(e.cantidades||0)}).eq("id",item.id);if(r.error){alert("No se pudo devolver el stock:\n\n"+r.error.message);return;}}
+  }
+  const r=await db.from("entregas").delete().eq("id",id);if(r.error){alert("No se pudo eliminar la entrega:\n\n"+r.error.message);return;}await registrarHistorial("Entrega eliminada",`${nombreEmpleado(e.empleado)}: ${e.cantidades} x ${e.elemento}`);await cargarTodo();
+};
 
-
-$("nuevaEntradaInventario")
-.addEventListener("click",abrirInventario);
-
-$("nuevaEntradaInventario2")
-.addEventListener("click",abrirInventario);
-
-$("cerrarModalInventario")
-.addEventListener("click",cerrarInventario);
-
-$("cancelarInventario")
-.addEventListener("click",cerrarInventario);
-
-
-/* REGISTRAR ENTRADA */
-
-$("formInventario").addEventListener("submit",e=>{
-    e.preventDefault();
-
-    const elemento=$("inventarioElemento").value;
-    const genero=$("inventarioGenero").value;
-    const talla=$("inventarioTalla").value;
-    const cantidad=Number($("inventarioCantidad").value);
-    const minimo=Number($("inventarioMinimo").value);
-
-    let item=inventario.find(x=>
-        x.elemento===elemento &&
-        x.genero===genero &&
-        x.talla===talla
-    );
-
-    if(item){
-
-        item.stock+=cantidad;
-        item.minimo=minimo;
-
-    }else{
-
-        inventario.push({
-            id:idNuevo(),
-            elemento,
-            genero,
-            talla,
-            stock:cantidad,
-            minimo
-        });
-    }
-
-    registrarHistorial(
-        "Entrada de inventario",
-        `${cantidad} unidades de ${elemento} / ${genero} / talla ${talla}`
-    );
-
-    guardar();
-    cerrarInventario();
-    cargarTodo();
-});
-
-
-function estadoInventario(item){
-
-    if(item.stock<=0)
-        return ["Agotado","agotado"];
-
-    if(item.stock<=item.minimo)
-        return ["Stock bajo","bajo"];
-
-    return ["Disponible","disponible"];
+/* ==================== INVENTARIO ==================== */
+function abrirInventario(){$("formInventario")?.reset();if($("inventarioFecha"))$("inventarioFecha").value=fechaHoy();if($("inventarioMinimo"))$("inventarioMinimo").value=STOCK_MINIMO_DEFECTO;cargarTallasInventario();$("modalInventario")?.classList.remove("oculto");}
+function cerrarInventario(){$("modalInventario")?.classList.add("oculto");}
+async function guardarInventario(ev){
+  ev.preventDefault();const elemento=$("inventarioElemento")?.value||"",genero=$("inventarioGenero")?.value||"Unisex",talla=$("inventarioTalla")?.value||"Única",cantidad=Number($("inventarioCantidad")?.value||0),minimo=Number($("inventarioMinimo")?.value||STOCK_MINIMO_DEFECTO),fecha=$("inventarioFecha")?.value||fechaHoy(),observaciones=$("inventarioObservaciones")?.value.trim()||null;
+  if(!elemento||!Number.isInteger(cantidad)||cantidad<1||!Number.isFinite(minimo)||minimo<0){alert("Completa correctamente la entrada de inventario.");return;}
+  const item=inventario.find(x=>norm(x.elemento)===norm(elemento)&&norm(x.genero||"Unisex")===norm(genero)&&norm(x.talla||"Única")===norm(talla));
+  let r;
+  if(item)r=await db.from("inventario").update({stock:Number(item.stock||0)+cantidad,minimo,genero,talla,fecha,observaciones}).eq("id",item.id).select();
+  else r=await db.from("inventario").insert([{elemento,genero,talla,stock:cantidad,minimo,fecha,observaciones}]).select();
+  if(r.error){alert("Error guardando inventario:\n\n"+r.error.message);return;}
+  await registrarHistorial("Entrada de inventario",`${cantidad} unidades de ${elemento} / ${genero} / talla ${talla}`);cerrarInventario();await cargarTodo();
 }
-
-
 function renderInventario(){
-
-    const buscar=($("buscarInventario")?.value||"").toLowerCase().trim();
-    const filtroGenero=$("filtroGeneroInventario")?.value||"";
-    const filtroTalla=$("filtroTallaInventario")?.value||"";
-    const filtroEstado=$("filtroEstadoInventario")?.value||"";
-
-    const tallas=[...new Set(inventario.map(i=>i.talla||"Única"))].sort((a,b)=>
-        String(a).localeCompare(String(b),undefined,{numeric:true})
-    );
-
-    if($("filtroTallaInventario")){
-        const actual=$("filtroTallaInventario").value;
-        $("filtroTallaInventario").innerHTML=`<option value="">Todas</option>`+
-            tallas.map(t=>`<option value="${escapar(t)}">${escapar(t)}</option>`).join("");
-        $("filtroTallaInventario").value=tallas.includes(actual)?actual:"";
-    }
-
-    const items=inventario
-        .map(item=>({...item,genero:item.genero||"Unisex",talla:item.talla||"Única"}))
-        .filter(item=>{
-            const [estado]=estadoInventario(item);
-            return (
-                (!buscar || `${item.elemento} ${item.genero} ${item.talla}`.toLowerCase().includes(buscar)) &&
-                (!filtroGenero || item.genero===filtroGenero) &&
-                (!filtroTalla || item.talla===filtroTalla) &&
-                (!filtroEstado || estado===filtroEstado)
-            );
-        })
-        .sort((a,b)=>`${a.elemento} ${a.genero} ${a.talla}`.localeCompare(`${b.elemento} ${b.genero} ${b.talla}`,undefined,{numeric:true}));
-
-    $("invReferencias").textContent=inventario.length;
-    $("invUnidades").textContent=inventario.reduce((s,i)=>s+Number(i.stock),0);
-    $("invBajo").textContent=inventario.filter(i=>Number(i.stock)<=Number(i.minimo)).length;
-
-    $("tablaInventarioBody").innerHTML=items.map(item=>{
-
-        const [estado,clase]=estadoInventario(item);
-        const claseGenero=(item.genero||"Unisex").toLowerCase();
-        const iconoGenero=item.genero==="Mujer"?"👩":item.genero==="Hombre"?"👨":"👥";
-
-        return `
-        <tr class="${clase==="bajo"?"stock-bajo-row":""}">
-            <td><strong>${escapar(item.elemento)}</strong></td>
-            <td><span class="badge-genero ${claseGenero}">${iconoGenero} ${escapar(item.genero)}</span></td>
-            <td><span class="talla-inventario">${escapar(item.talla)}</span></td>
-            <td>
-                <div class="stock-control">
-                    <button class="btn-stock" onclick="cambiarStock('${item.id}',-1)">−</button>
-                    <span class="stock-numero">${item.stock}</span>
-                    <button class="btn-stock" onclick="cambiarStock('${item.id}',1)">+</button>
-                </div>
-            </td>
-            <td>${item.minimo}</td>
-            <td><span class="estado ${clase}">${estado}</span></td>
-            <td>
-                <div class="acciones">
-                    <button class="btn-mini" onclick="editarMinimo('${item.id}')">⚙️</button>
-                    <button class="btn-mini" onclick="eliminarInventario('${item.id}')">🗑️</button>
-                </div>
-            </td>
-        </tr>`;
-    }).join("");
+  const b=$("tablaInventarioBody");if(!b)return;const q=$("buscarInventario")?.value.toLowerCase().trim()||"",fg=$("filtroGeneroInventario")?.value||"",ft=$("filtroTallaInventario")?.value||"",fe=$("filtroEstadoInventario")?.value||"";
+  const tallas=[...new Set(inventario.map(i=>i.talla||"Única"))].sort((a,b)=>String(a).localeCompare(String(b),undefined,{numeric:true}));const fs=$("filtroTallaInventario");if(fs){const actual=fs.value;fs.innerHTML=`<option value="">Todas</option>`+tallas.map(t=>`<option value="${escapar(t)}">${escapar(t)}</option>`).join("");if(tallas.includes(actual))fs.value=actual;}
+  const a=inventario.map(i=>({...i,genero:i.genero||"Unisex",talla:i.talla||"Única",stock:Number(i.stock||0),minimo:stockMin(i)})).filter(i=>{const[st]=estadoInventario(i);return(!q||`${i.elemento} ${i.genero} ${i.talla}`.toLowerCase().includes(q))&&(!fg||i.genero===fg)&&(!ft||i.talla===ft)&&(!fe||st===fe);}).sort((x,y)=>`${x.elemento} ${x.genero} ${x.talla}`.localeCompare(`${y.elemento} ${y.genero} ${y.talla}`,undefined,{numeric:true}));
+  if($("invReferencias"))$("invReferencias").textContent=inventario.length;if($("invUnidades"))$("invUnidades").textContent=inventario.reduce((s,i)=>s+Number(i.stock||0),0);if($("invBajo"))$("invBajo").textContent=inventario.filter(i=>Number(i.stock||0)<=stockMin(i)).length;
+  b.innerHTML=a.map(i=>{const[st,cl]=estadoInventario(i),g=i.genero||"Unisex",ico=g==="Mujer"?"👩":g==="Hombre"?"👨":"👥";return`<tr class="${cl==="bajo"?"stock-bajo-row":""}"><td><strong>${escapar(i.elemento)}</strong></td><td><span class="badge-genero ${norm(g)}">${ico} ${escapar(g)}</span></td><td><span class="talla-inventario">${escapar(i.talla)}</span></td><td><div class="stock-control"><button class="btn-stock" type="button" onclick="cambiarStock('${i.id}',-1)">−</button><span class="stock-numero">${i.stock}</span><button class="btn-stock" type="button" onclick="cambiarStock('${i.id}',1)">+</button></div></td><td>${i.minimo}</td><td><span class="estado ${cl}">${st}</span></td><td><div class="acciones"><button class="btn-mini" type="button" onclick="editarMinimo('${i.id}')">⚙️</button><button class="btn-mini" type="button" onclick="eliminarInventario('${i.id}')">🗑️</button></div></td></tr>`;}).join("");
 }
+window.cambiarStock=async(id,c)=>{const i=inventario.find(x=>Number(x.id)===Number(id));if(!i)return;const s=Number(i.stock||0)+Number(c);if(s<0)return;const r=await db.from("inventario").update({stock:s}).eq("id",id);if(r.error){alert("No se pudo actualizar el stock:\n\n"+r.error.message);return;}await registrarHistorial(c>0?"Ajuste de inventario +":"Ajuste de inventario -",`${i.elemento}: ${c>0?"+":""}${c}`);await cargarTodo();};
+window.editarMinimo=async id=>{const i=inventario.find(x=>Number(x.id)===Number(id));if(!i)return;const n=prompt(`Stock mínimo para ${i.elemento}:`,String(i.minimo??STOCK_MINIMO_DEFECTO));if(n===null)return;const v=Number(n);if(!Number.isFinite(v)||v<0){alert("Ingresa un número válido.");return;}const r=await db.from("inventario").update({minimo:v}).eq("id",id);if(r.error){alert("No se pudo actualizar:\n\n"+r.error.message);return;}await registrarHistorial("Stock mínimo actualizado",`${i.elemento}: ${v}`);await cargarTodo();};
+window.eliminarInventario=async id=>{const i=inventario.find(x=>Number(x.id)===Number(id));if(!i)return;if(!confirm(`¿Eliminar "${i.elemento}" del inventario?`))return;const r=await db.from("inventario").delete().eq("id",id);if(r.error){alert("No se pudo eliminar:\n\n"+r.error.message);return;}await registrarHistorial("Elemento eliminado del inventario",`${i.elemento} / ${i.talla}`);await cargarTodo();};
 
-
-window.cambiarStock=(id,cantidad)=>{
-
-    const item=inventario.find(x=>x.id===id);
-
-    if(!item)return;
-
-    if(item.stock+cantidad<0)return;
-
-    item.stock+=cantidad;
-
-    registrarHistorial(
-        cantidad>0
-        ?"Ajuste de inventario +"
-        :"Ajuste de inventario -",
-        `${item.elemento}: ${cantidad>0?"+":""}${cantidad}`
-    );
-
-    guardar();
-    cargarTodo();
-};
-
-
-window.editarMinimo=id=>{
-
-    const item=inventario.find(x=>x.id===id);
-
-    if(!item)return;
-
-    const nuevo=prompt(
-        `Stock mínimo para ${item.elemento}:`,
-        item.minimo
-    );
-
-    if(nuevo===null)return;
-
-    const valor=Number(nuevo);
-
-    if(!Number.isFinite(valor)||valor<0){
-        alert("Ingresa un número válido.");
-        return;
-    }
-
-    item.minimo=valor;
-
-    registrarHistorial(
-        "Stock mínimo actualizado",
-        `${item.elemento}: ${valor}`
-    );
-
-    guardar();
-    cargarTodo();
-};
-
-
-window.eliminarInventario=id=>{
-
-    const item=inventario.find(x=>x.id===id);
-
-    if(!item)return;
-
-    if(!confirm(
-        `¿Eliminar "${item.elemento}" del inventario?`
-    ))return;
-
-    inventario=inventario.filter(x=>x.id!==id);
-
-    registrarHistorial(
-        "Elemento eliminado del inventario",
-        item.elemento
-    );
-
-    guardar();
-    cargarTodo();
-};
-
-
-/* =====================================================
-   INICIO / ESTADÍSTICAS
-===================================================== */
-
+/* ==================== DASHBOARD / HISTORIAL / REPORTES ==================== */
+function renderHistorial(){const b=$("tablaHistorialBody");if(!b)return;b.innerHTML=historial.map(h=>`<tr><td>${formatearFecha(h.fecha)}</td><td><strong>${escapar(h.accion)}</strong></td><td>${escapar(h.detalle)}</td></tr>`).join("");}
+function renderUltimas(){const b=$("tablaUltimasEntregasBody");if(!b)return;b.innerHTML=entregas.slice(0,8).map(e=>{const st=e.estado||"Entregado";return`<tr><td>${formatearFecha(e.fecha)}</td><td><strong>${escapar(nombreEmpleado(e.empleado))}</strong></td><td>${escapar(e.elemento||"-")}</td><td>${Number(e.cantidades||0)}</td><td>${escapar(e.centro_costo||"-")}</td><td><span class="estado ${st==="Entregado"?"entregado":"pendiente"}">${escapar(st)}</span></td></tr>`;}).join("");}
 function actualizarInicio(){
-
-    $("totalEmpleados").textContent=empleados.length;
-
-    $("totalEntregas").textContent=entregas.length;
-
-    $("totalPendientes").textContent=
-        entregas.filter(e=>e.estado==="Pendiente").length;
-
-    const mesActual=new Date().toISOString().slice(0,7);
-
-    $("totalMes").textContent=
-        entregas.filter(e=>
-            e.fecha?.startsWith(mesActual)
-        ).length;
-
-
-    $("resumenTotalDotacion").textContent=entregas.length;
-
-    $("resumenEntregadas").textContent=
-        entregas.filter(e=>e.estado==="Entregado").length;
-
-    $("resumenPendientes").textContent=
-        entregas.filter(e=>e.estado==="Pendiente").length;
-
-
-    $("tablaUltimasEntregasBody").innerHTML=
-        entregas.slice(0,8).map(e=>`
-
-        <tr>
-            <td>${e.fecha}</td>
-            <td>${escapar(e.empleado)}</td>
-            <td>${escapar(e.elemento)}</td>
-            <td>${e.cantidad}</td>
-            <td>${e.centroCosto}</td>
-            <td>
-                <span class="estado ${
-                    e.estado==="Entregado"
-                    ?"entregado":"pendiente"
-                }">
-                    ${e.estado}
-                </span>
-            </td>
-        </tr>
-
-    `).join("");
-
-    renderGrafica();
+  const entregadas=entregas.filter(e=>(e.estado||"Entregado")==="Entregado"),pend=entregas.filter(e=>e.estado==="Pendiente"),m=fechaHoy().slice(0,7);
+  if($("totalEmpleados"))$("totalEmpleados").textContent=empleados.length;if($("totalEntregas"))$("totalEntregas").textContent=entregadas.length;if($("totalPendientes"))$("totalPendientes").textContent=pend.length;if($("totalMes"))$("totalMes").textContent=entregas.filter(e=>String(e.fecha||"").slice(0,7)===m).length;
+  if($("resumenTotalDotacion"))$("resumenTotalDotacion").textContent=entregas.length;if($("resumenEntregadas"))$("resumenEntregadas").textContent=entregadas.length;if($("resumenPendientes"))$("resumenPendientes").textContent=pend.length;
+  renderUltimas();renderGrafica();
 }
-
-
 function renderGrafica(){
-
-    const ahora=new Date();
-
-    const meses=[];
-
-    for(let i=5;i>=0;i--){
-
-        const fecha=new Date(
-            ahora.getFullYear(),
-            ahora.getMonth()-i,
-            1
-        );
-
-        const key=
-            fecha.getFullYear()+"-"+
-            String(fecha.getMonth()+1).padStart(2,"0");
-
-        const nombre=fecha.toLocaleString(
-            "es-CO",
-            {month:"short"}
-        );
-
-        const total=entregas.filter(e=>
-            e.fecha?.startsWith(key)
-        ).length;
-
-        meses.push({nombre,total});
-    }
-
-    const max=Math.max(
-        1,
-        ...meses.map(x=>x.total)
-    );
-
-    $("graficoMes").innerHTML=
-        meses.map(m=>`
-
-        <div class="barra"
-             style="height:${Math.max(8,(m.total/max)*200)}px">
-
-            <strong>${m.total}</strong>
-            <span>${m.nombre}</span>
-
-        </div>
-
-    `).join("");
-
-
-    const conteo={};
-
-    entregas.forEach(e=>{
-        conteo[e.elemento]=
-            (conteo[e.elemento]||0)+Number(e.cantidad);
-    });
-
-    const colores=[
-        "#2563eb",
-        "#22c55e",
-        "#f59e0b",
-        "#8b5cf6",
-        "#ef4444"
-    ];
-
-    $("leyendaElementos").innerHTML=
-        Object.entries(conteo)
-        .slice(0,5)
-        .map(([nombre,total],i)=>`
-
-            <div>
-                <span class="punto"
-                style="background:${colores[i]}"></span>
-                ${escapar(nombre)} (${total})
-            </div>
-
-        `).join("") ||
-        `<div style="color:#94a3b8">
-            Aún no hay entregas
-        </div>`;
+  const c=$("graficoMes");if(c){const now=new Date(),a=[];for(let i=5;i>=0;i--){const d=new Date(now.getFullYear(),now.getMonth()-i,1),k=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}`,n=d.toLocaleString("es-CO",{month:"short"}),t=entregas.filter(e=>String(e.fecha||"").slice(0,7)===k).length;a.push({n,t});}const max=Math.max(1,...a.map(x=>x.t));c.innerHTML=a.map(x=>`<div class="barra" style="height:${Math.max(8,x.t/max*200)}px"><strong>${x.t}</strong><span>${escapar(x.n)}</span></div>`).join("");}
+  const l=$("leyendaElementos");if(l){const q={};entregas.forEach(e=>q[e.elemento]=(q[e.elemento]||0)+Number(e.cantidades||0));const cols=["#2563eb","#22c55e","#f59e0b","#8b5cf6","#ef4444"];l.innerHTML=Object.entries(q).sort((a,b)=>b[1]-a[1]).slice(0,5).map(([n,t],i)=>`<div><span class="punto" style="background:${cols[i]}"></span>${escapar(n)} (${t})</div>`).join("")||`<div style="color:#94a3b8">Aún no hay entregas</div>`;}
 }
-
-
-/* =====================================================
-   HISTORIAL
-===================================================== */
-
-function renderHistorial(){
-
-    $("tablaHistorialBody").innerHTML=
-        historial.map(h=>`
-
-        <tr>
-            <td>${escapar(h.fecha)}</td>
-            <td><strong>${escapar(h.accion)}</strong></td>
-            <td>${escapar(h.detalle)}</td>
-        </tr>
-
-    `).join("");
-}
-
-
-/* =====================================================
-   REPORTES
-===================================================== */
-
-function obtenerReporte(){
-
-    const buscar=$("reporteBuscar").value.toLowerCase();
-    const estado=$("reporteEstado").value;
-    const desde=$("reporteFechaInicio").value;
-    const hasta=$("reporteFechaFin").value;
-
-    return entregas.filter(e=>{
-
-        const texto=
-            `${e.empleado} ${e.codigo} ${e.elemento}`
-            .toLowerCase();
-
-        if(buscar && !texto.includes(buscar))
-            return false;
-
-        if(estado && e.estado!==estado)
-            return false;
-
-        if(desde && e.fecha<desde)
-            return false;
-
-        if(hasta && e.fecha>hasta)
-            return false;
-
-        return true;
-    });
-}
-
-
 function renderReporte(){
+  const q=$("reporteBuscar")?.value.toLowerCase().trim()||"",est=$("reporteEstado")?.value||"",des=$("reporteFechaInicio")?.value||"",has=$("reporteFechaFin")?.value||"";
+  const a=entregas.filter(e=>{const emp=empleadoPorId(e.empleado),t=`${emp?.nombre||""} ${emp?.codigo||""} ${emp?.cedula||""} ${e.elemento||""} ${e.centro_costo||""}`.toLowerCase(),f=String(e.fecha||"").slice(0,10),s=e.estado||"Entregado";return(!q||t.includes(q))&&(!est||s===est)&&(!des||f>=des)&&(!has||f<=has);});
+  if($("reporteTotalEntregas"))$("reporteTotalEntregas").textContent=a.length;if($("reporteEntregadas"))$("reporteEntregadas").textContent=a.filter(e=>(e.estado||"Entregado")==="Entregado").length;if($("reportePendientes"))$("reportePendientes").textContent=a.filter(e=>e.estado==="Pendiente").length;if($("reporteEmpleados"))$("reporteEmpleados").textContent=new Set(a.map(e=>e.empleado)).size;
+  const b=$("tablaReporteBody");if(!b)return;b.innerHTML=a.map(e=>{const emp=empleadoPorId(e.empleado),s=e.estado||"Entregado";return`<tr><td>${formatearFecha(e.fecha)}</td><td>${escapar(emp?.nombre||"-")}</td><td>${escapar(emp?.codigo||"-")}</td><td>${escapar(e.elemento||"-")}</td><td>${escapar(e.talla||"-")}</td><td>${Number(e.cantidades||0)}</td><td>${escapar(e.centro_costo||"-")}</td><td><span class="estado ${s==="Entregado"?"entregado":"pendiente"}">${escapar(s)}</span></td></tr>`;}).join("");
+}
+function descargarReporte(){const q=$("reporteBuscar")?.value.toLowerCase().trim()||"",est=$("reporteEstado")?.value||"",des=$("reporteFechaInicio")?.value||"",has=$("reporteFechaFin")?.value||"";const a=entregas.filter(e=>{const emp=empleadoPorId(e.empleado),t=`${emp?.nombre||""} ${emp?.codigo||""} ${emp?.cedula||""} ${e.elemento||""} ${e.centro_costo||""}`.toLowerCase(),f=String(e.fecha||"").slice(0,10),s=e.estado||"Entregado";return(!q||t.includes(q))&&(!est||s===est)&&(!des||f>=des)&&(!has||f<=has);});if(!a.length){alert("No hay datos para descargar.");return;}const rows=[["Fecha","Empleado","Código","Elemento","Talla","Cantidad","Centro costo","Estado","Observaciones"],...a.map(e=>{const emp=empleadoPorId(e.empleado);return[formatearFecha(e.fecha),emp?.nombre||"",emp?.codigo||"",e.elemento||"",e.talla||"",e.cantidades||0,e.centro_costo||"",e.estado||"Entregado",e.comentarios||""];})];const csv=rows.map(r=>r.map(v=>`"${String(v??"").replaceAll('"','""')}"`).join(",")).join("\n");const url=URL.createObjectURL(new Blob(["\ufeff"+csv],{type:"text/csv;charset=utf-8;"})),aEl=document.createElement("a");aEl.href=url;aEl.download=`reporte-dotacion-${fechaHoy()}.csv`;document.body.appendChild(aEl);aEl.click();aEl.remove();URL.revokeObjectURL(url);}
+function buscarGlobal(){const q=$("buscarGlobal")?.value.trim().toLowerCase()||"";if(!q)return;const emp=empleados.find(e=>`${e.nombre||""} ${e.codigo||""} ${e.cedula||""} ${e.cargo||""}`.toLowerCase().includes(q));if(emp){document.querySelector('[data-seccion="seccion-empleados"]')?.click();if($("buscarEmpleado"))$("buscarEmpleado").value=q;renderEmpleados();return;}const ent=entregas.find(e=>{const x=empleadoPorId(e.empleado);return`${x?.nombre||""} ${x?.codigo||""} ${e.elemento||""} ${e.centro_costo||""}`.toLowerCase().includes(q);});if(ent){document.querySelector('[data-seccion="seccion-dotacion"]')?.click();if($("buscarEntrega"))$("buscarEntrega").value=q;renderEntregas();return;}const it=inventario.find(e=>`${e.elemento||""} ${e.genero||""} ${e.talla||""}`.toLowerCase().includes(q));if(it){document.querySelector('[data-seccion="seccion-inventario"]')?.click();if($("buscarInventario"))$("buscarInventario").value=q;renderInventario();return;}alert("No se encontraron resultados.");}
+function actualizarNotificaciones(){const n=inventario.filter(i=>Number(i.stock||0)<=stockMin(i)).length;if($("contadorNotificaciones"))$("contadorNotificaciones").textContent=n;if($("notificacionesBtn"))$("notificacionesBtn").title=n?`${n} elementos con stock bajo`:"Sin alertas";}
 
-    const lista=obtenerReporte();
-
-    $("reporteTotalEntregas").textContent=lista.length;
-
-    $("reporteEntregadas").textContent=
-        lista.filter(e=>e.estado==="Entregado").length;
-
-    $("reportePendientes").textContent=
-        lista.filter(e=>e.estado==="Pendiente").length;
-
-    $("reporteEmpleados").textContent=
-        new Set(lista.map(e=>e.empleadoId)).size;
-
-
-    $("tablaReporteBody").innerHTML=
-        lista.map(e=>`
-
-        <tr>
-
-            <td>${e.fecha}</td>
-            <td>${escapar(e.empleado)}</td>
-            <td>${escapar(e.codigo)}</td>
-            <td>${escapar(e.elemento)}</td>
-            <td>${escapar(e.talla||"-")}</td>
-            <td>${e.cantidad}</td>
-            <td>${e.centroCosto}</td>
-
-            <td>
-                <span class="estado ${
-                    e.estado==="Entregado"
-                    ?"entregado":"pendiente"
-                }">
-                    ${e.estado}
-                </span>
-            </td>
-
-        </tr>
-
-    `).join("");
+/* ==================== EVENTOS ==================== */
+function iniciarEventos(){
+  $("nuevoEmpleado")?.addEventListener("click",()=>abrirEmpleado());$("cerrarModalEmpleado")?.addEventListener("click",cerrarEmpleado);$("cancelarEmpleado")?.addEventListener("click",cerrarEmpleado);$("formEmpleado")?.addEventListener("submit",guardarEmpleado);$("buscarEmpleado")?.addEventListener("input",renderEmpleados);
+  $("nuevaEntrega")?.addEventListener("click",abrirEntrega);$("cerrarModalEntrega")?.addEventListener("click",cerrarEntrega);$("cancelarEntrega")?.addEventListener("click",cerrarEntrega);$("formEntrega")?.addEventListener("submit",guardarEntrega);$("entregaEmpleado")?.addEventListener("change",cargarTallas);$("entregaElemento")?.addEventListener("change",cargarTallas);$("buscarEntrega")?.addEventListener("input",renderEntregas);
+  $("nuevaEntradaInventario")?.addEventListener("click",abrirInventario);$("nuevaEntradaInventario2")?.addEventListener("click",abrirInventario);$("cerrarModalInventario")?.addEventListener("click",cerrarInventario);$("cancelarInventario")?.addEventListener("click",cerrarInventario);$("formInventario")?.addEventListener("submit",guardarInventario);$("inventarioElemento")?.addEventListener("change",cargarTallasInventario);$("buscarInventario")?.addEventListener("input",renderInventario);$("filtroGeneroInventario")?.addEventListener("change",renderInventario);$("filtroTallaInventario")?.addEventListener("change",renderInventario);$("filtroEstadoInventario")?.addEventListener("change",renderInventario);
+  $("actualizarReporte")?.addEventListener("click",renderReporte);$("descargarReporte")?.addEventListener("click",descargarReporte);$("imprimirReporte")?.addEventListener("click",()=>window.print());$("btnBuscarGlobal")?.addEventListener("click",buscarGlobal);$("buscarGlobal")?.addEventListener("keydown",e=>{if(e.key==="Enter")buscarGlobal();});
 }
 
-
-$("actualizarReporte").addEventListener(
-    "click",
-    renderReporte
-);
-
-
-/* =====================================================
-   CSV
-===================================================== */
-
-$("descargarReporte").addEventListener("click",()=>{
-
-    const lista=obtenerReporte();
-
-    let csv=
-        "Fecha,Empleado,Codigo,Elemento,Talla,Cantidad,Centro costo,Estado\n";
-
-    lista.forEach(e=>{
-
-        csv+=[
-            e.fecha,
-            e.empleado,
-            e.codigo,
-            e.elemento,
-            e.talla||"",
-            e.cantidad,
-            e.centroCosto,
-            e.estado
-        ]
-        .map(v=>`"${String(v).replaceAll('"','""')}"`)
-        .join(",")+"\n";
-    });
-
-    const blob=new Blob(
-        ["\ufeff"+csv],
-        {type:"text/csv;charset=utf-8;"}
-    );
-
-    const url=URL.createObjectURL(blob);
-
-    const a=document.createElement("a");
-
-    a.href=url;
-    a.download="reporte-dotacion.csv";
-    a.click();
-
-    URL.revokeObjectURL(url);
-});
-
-
-$("imprimirReporte").addEventListener(
-    "click",
-    ()=>window.print()
-);
-
-
-/* =====================================================
-   BÚSQUEDA GLOBAL
-===================================================== */
-
-$("btnBuscarGlobal").addEventListener("click",buscarGlobal);
-
-$("buscarGlobal").addEventListener("keydown",e=>{
-    if(e.key==="Enter") buscarGlobal();
-});
-
-
-function buscarGlobal(){
-
-    const q=$("buscarGlobal").value.trim().toLowerCase();
-
-    if(!q)return;
-
-    const empleado=empleados.find(e=>
-        `${e.nombre} ${e.codigo} ${e.documento}`
-        .toLowerCase()
-        .includes(q)
-    );
-
-    if(empleado){
-
-        document
-        .querySelector('[data-seccion="seccion-empleados"]')
-        .click();
-
-        $("buscarEmpleado").value=q;
-        renderEmpleados();
-
-        return;
-    }
-
-    const entrega=entregas.find(e=>
-        `${e.empleado} ${e.elemento} ${e.centroCosto}`
-        .toLowerCase()
-        .includes(q)
-    );
-
-    if(entrega){
-
-        document
-        .querySelector('[data-seccion="seccion-dotacion"]')
-        .click();
-
-        $("buscarEntrega").value=q;
-        renderEntregas();
-
-        return;
-    }
-
-    const item=inventario.find(e=>
-        e.elemento.toLowerCase().includes(q)
-    );
-
-    if(item){
-
-        document
-        .querySelector('[data-seccion="seccion-inventario"]')
-        .click();
-
-        return;
-    }
-
-    alert("No se encontraron resultados.");
-}
-
-
-/* =====================================================
-   NOTIFICACIONES
-===================================================== */
-
-function actualizarNotificaciones(){
-
-    const bajo=inventario.filter(
-        x=>x.stock<=x.minimo
-    );
-
-    $("contadorNotificaciones").textContent=bajo.length;
-
-    $("notificacionesBtn").title=
-        bajo.length
-        ? `${bajo.length} elementos con stock bajo`
-        : "Sin alertas";
-}
-
-
-/* =====================================================
-   CARGAR TODO
-===================================================== */
-
-function cargarTodo(){
-
-    cargarSelectEmpleados();
-
-    renderEmpleados();
-    renderEntregas();
-    renderInventario();
-    renderHistorial();
-    renderReporte();
-
-    actualizarInicio();
-    actualizarNotificaciones();
-}
-
-
-/* =====================================================
-   FECHA INICIAL
-===================================================== */
-
-$("entregaFecha").value=fechaHoy();
-$("inventarioFecha").value=fechaHoy();
-
-
-/* =====================================================
-   DATOS INICIALES DE INVENTARIO
-   SOLO SE CREAN SI NO EXISTE INVENTARIO
-===================================================== */
-
-if(!localStorage.getItem(STORAGE.inventario)){
-
-    inventario=[
-        {
-            id:idNuevo(),
-            elemento:"Camisa Administrativos",
-            genero:"Unisex",
-            talla:"Única",
-            stock:0,
-            minimo:5
-        },
-        {
-            id:idNuevo(),
-            elemento:"Camisa Ventas Nutresa",
-            genero:"Unisex",
-            talla:"Única",
-            stock:0,
-            minimo:5
-        },
-        {
-            id:idNuevo(),
-            elemento:"Camisa Ventas Cárnicos",
-            genero:"Unisex",
-            talla:"Única",
-            stock:0,
-            minimo:5
-        },
-        {
-            id:idNuevo(),
-            elemento:"Camisa Ventas Meals",
-            genero:"Unisex",
-            talla:"Única",
-            stock:0,
-            minimo:5
-        },
-        {
-            id:idNuevo(),
-            elemento:"Camisilla Verde",
-            genero:"Unisex",
-            talla:"Única",
-            stock:0,
-            minimo:5
-        },
-        {
-            id:idNuevo(),
-            elemento:"Camisilla Gris",
-            genero:"Unisex",
-            talla:"Única",
-            stock:0,
-            minimo:5
-        },
-        {
-            id:idNuevo(),
-            elemento:"Suéter Verde",
-            genero:"Unisex",
-            talla:"Única",
-            stock:0,
-            minimo:5
-        },
-        {
-            id:idNuevo(),
-            elemento:"Buso Gris",
-            genero:"Unisex",
-            talla:"Única",
-            stock:0,
-            minimo:5
-        },
-        {
-            id:idNuevo(),
-            elemento:"Pantalón",
-            genero:"Unisex",
-            talla:"Única",
-            stock:0,
-            minimo:5
-        },
-        {
-            id:idNuevo(),
-            elemento:"Botas",
-            genero:"Unisex",
-            talla:"Única",
-            stock:0,
-            minimo:5
-        },
-        {
-            id:idNuevo(),
-            elemento:"Chaqueta",
-            genero:"Unisex",
-            talla:"Única",
-            stock:0,
-            minimo:5
-        }
-    ];
-
-    guardar();
-}
+/* ==================== ARRANQUE ==================== */
+async function cargarTodo(){if(await cargarDatos()){cargarSelectEmpleados();cargarTallas();cargarTallasInventario();renderEmpleados();renderEntregas();renderInventario();renderHistorial();renderReporte();actualizarInicio();actualizarNotificaciones();}}
+document.addEventListener("DOMContentLoaded",async()=>{console.log("✅ CONTROL-DOTACIÓN JS cargado");if($("entregaFecha"))$("entregaFecha").value=fechaHoy();if($("inventarioFecha"))$("inventarioFecha").value=fechaHoy();iniciarLogin();iniciarNavegacion();iniciarEventos();if(localStorage.getItem(STORAGE.sesion)==="true"){$("pantallaLogin")?.classList.add("oculto");$("dashboard")?.classList.remove("oculto");}await cargarTodo();});
+setInterval(async()=>{if(!document.hidden)await cargarTodo();},15000);
 
 </script>
 

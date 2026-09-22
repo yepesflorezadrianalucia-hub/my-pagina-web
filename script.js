@@ -1,73 +1,59 @@
-// Configuración de Supabase
-const SUPABASE_URL = 'https://zqnjhqchnzqailpqlfvb.supabase.co';
-const SUPABASE_ANON_KEY = 'Asb_publishable_UteEe99FemnxY2udwsXUkw_nE61X1r7QUI_VA_TU_CLAVE_ANON';
-
-// Inicialización del cliente
-const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-
-/* =========================================================
-   CONTROL-DOTACIÓN
-   SCRIPT COMPLETO
-   ========================================================= */
-
 "use strict";
 
 /* =========================================================
-   DATOS
+   CONTROL-DOTACIÓN
+   VERSIÓN UNIFICADA - SUPABASE
+   ========================================================= */
+
+/* =========================================================
+   CONFIGURACIÓN SUPABASE
+   ========================================================= */
+
+const SUPABASE_URL =
+    "https://zqnjhqchnzqailpqlfvb.supabase.co";
+
+/*
+   PEGA AQUÍ TU CLAVE REAL DE SUPABASE.
+
+   Ejemplo:
+   const SUPABASE_ANON_KEY = "sb_publishable_...";
+*/
+const SUPABASE_ANON_KEY =
+    "PEsb_publishable_UteEe99FemnxY2udwsXUkw_nE61X1r7";
+
+const supabaseClient =
+    supabase.createClient(
+        SUPABASE_URL,
+        SUPABASE_ANON_KEY
+    );
+
+/* =========================================================
+   CONFIGURACIÓN GENERAL
    ========================================================= */
 
 const STORAGE = {
-    empleados: "controlDotacion_empleados",
-    entregas: "controlDotacion_entregas",
-    inventario: "controlDotacion_inventario",
-    historial: "controlDotacion_historial",
     sesion: "controlDotacion_sesion"
 };
 
-const elementosBase = [
-    "Camisa Administrativos",
-    "Camisa Ventas Nutresa",
-    "Camisa Ventas Cárnicos",
-    "Camisa Ventas Meals",
-    "Camisilla Verde",
-    "Camisilla Gris",
-    "Suéter Verde",
-    "Buso Gris",
-    "Pantalón",
-    "Botas",
-    "Chaqueta",
-    "Otro"
-];
+const STOCK_MINIMO = 5;
 
-let empleados = cargar(STORAGE.empleados, []);
-let entregas = cargar(STORAGE.entregas, []);
-let inventario = cargar(STORAGE.inventario, []);
-let historial = cargar(STORAGE.historial, []);
+let empleados = [];
+let entregas = [];
+let inventario = [];
+
+/*
+   Historial visual de la sesión.
+   Los datos principales NO dependen de localStorage.
+*/
+let historial = [];
 
 let empleadoEditando = null;
 let entregaEditando = null;
+let cargandoDatos = false;
 
 /* =========================================================
    UTILIDADES
    ========================================================= */
-
-function cargar(clave, defecto) {
-    try {
-        const datos = localStorage.getItem(clave);
-        return datos ? JSON.parse(datos) : defecto;
-    } catch (error) {
-        console.error("Error cargando", clave, error);
-        return defecto;
-    }
-}
-
-function guardar(clave, datos) {
-    localStorage.setItem(clave, JSON.stringify(datos));
-}
-
-function generarId(prefijo = "ID") {
-    return prefijo + Date.now() + Math.random().toString(36).substring(2, 7);
-}
 
 function escapeHTML(valor) {
     return String(valor ?? "")
@@ -80,53 +66,248 @@ function escapeHTML(valor) {
 
 function fechaActual() {
     const ahora = new Date();
-    const año = ahora.getFullYear();
-    const mes = String(ahora.getMonth() + 1).padStart(2, "0");
-    const dia = String(ahora.getDate()).padStart(2, "0");
+
+    const año =
+        ahora.getFullYear();
+
+    const mes =
+        String(
+            ahora.getMonth() + 1
+        ).padStart(2, "0");
+
+    const dia =
+        String(
+            ahora.getDate()
+        ).padStart(2, "0");
 
     return `${año}-${mes}-${dia}`;
 }
 
 function formatearFecha(fecha) {
-    if (!fecha) return "-";
+    if (!fecha) {
+        return "-";
+    }
 
-    const partes = fecha.split("-");
+    const texto =
+        String(fecha);
 
-    if (partes.length === 3) {
+    if (
+        texto.includes("T")
+    ) {
+        const date =
+            new Date(texto);
+
+        if (!Number.isNaN(
+            date.getTime()
+        )) {
+            return date.toLocaleDateString(
+                "es-CO"
+            );
+        }
+    }
+
+    const partes =
+        texto.substring(
+            0,
+            10
+        ).split("-");
+
+    if (
+        partes.length === 3
+    ) {
         return `${partes[2]}/${partes[1]}/${partes[0]}`;
     }
 
-    return fecha;
+    return texto;
 }
 
 function obtenerEmpleado(id) {
-    return empleados.find(e => e.id === id);
+    return empleados.find(
+        empleado =>
+            Number(
+                empleado.id
+            ) ===
+            Number(id)
+    );
 }
 
-function agregarHistorial(accion, detalle) {
+function obtenerNombreEmpleado(id) {
+    const empleado =
+        obtenerEmpleado(id);
+
+    return empleado?.nombre ||
+        "Empleado no encontrado";
+}
+
+function mostrarMensaje(
+    texto,
+    tipo = "ok"
+) {
+    const mensaje =
+        document.getElementById(
+            "mensaje"
+        );
+
+    if (!mensaje) {
+        return;
+    }
+
+    mensaje.textContent =
+        texto;
+
+    mensaje.className =
+        `mensaje-login ${tipo}`;
+
+    setTimeout(
+        () => {
+            mensaje.textContent =
+                "";
+
+            mensaje.className =
+                "mensaje-login";
+        },
+        3500
+    );
+}
+
+function agregarHistorial(
+    accion,
+    detalle
+) {
     historial.unshift({
-        id: generarId("H"),
-        fecha: fechaActual(),
+        fecha:
+            new Date().toISOString(),
+
         accion,
+
         detalle
     });
 
-    guardar(STORAGE.historial, historial);
+    historial =
+        historial.slice(
+            0,
+            100
+        );
+
     renderHistorial();
 }
 
-function mostrarMensaje(texto, tipo = "ok") {
-    const mensaje = document.getElementById("mensaje");
+/* =========================================================
+   CARGAR DATOS DESDE SUPABASE
+   ========================================================= */
 
-    if (!mensaje) return;
+async function cargarDatosSupabase() {
 
-    mensaje.textContent = texto;
-    mensaje.className = `mensaje-login ${tipo}`;
+    if (cargandoDatos) {
+        return false;
+    }
 
-    setTimeout(() => {
-        mensaje.textContent = "";
-        mensaje.className = "mensaje-login";
-    }, 3500);
+    cargandoDatos = true;
+
+    try {
+
+        const [
+            empleadosResult,
+            inventarioResult,
+            entregasResult
+        ] = await Promise.all([
+
+            supabaseClient
+                .from("empleados")
+                .select("*")
+                .order(
+                    "id",
+                    {
+                        ascending: true
+                    }
+                ),
+
+            supabaseClient
+                .from("inventario")
+                .select("*")
+                .order(
+                    "id",
+                    {
+                        ascending: true
+                    }
+                ),
+
+            supabaseClient
+                .from("entregas")
+                .select("*")
+                .order(
+                    "fecha",
+                    {
+                        ascending: false
+                    }
+                )
+        ]);
+
+        if (
+            empleadosResult.error
+        ) {
+            throw empleadosResult.error;
+        }
+
+        if (
+            inventarioResult.error
+        ) {
+            throw inventarioResult.error;
+        }
+
+        if (
+            entregasResult.error
+        ) {
+            throw entregasResult.error;
+        }
+
+        empleados =
+            empleadosResult.data || [];
+
+        inventario =
+            inventarioResult.data || [];
+
+        entregas =
+            entregasResult.data || [];
+
+        console.log(
+            "Datos cargados desde Supabase",
+            {
+                empleados:
+                    empleados.length,
+
+                inventario:
+                    inventario.length,
+
+                entregas:
+                    entregas.length
+            }
+        );
+
+        return true;
+
+    } catch (error) {
+
+        console.error(
+            "Error cargando Supabase:",
+            error
+        );
+
+        mostrarMensaje(
+            "Error cargando datos: " +
+            (
+                error.message ||
+                error
+            ),
+            "error"
+        );
+
+        return false;
+
+    } finally {
+
+        cargandoDatos = false;
+    }
 }
 
 /* =========================================================
@@ -134,57 +315,181 @@ function mostrarMensaje(texto, tipo = "ok") {
    ========================================================= */
 
 function iniciarLogin() {
-    const loginForm = document.getElementById("loginForm");
-    const mostrarPassword = document.getElementById("mostrarPassword");
-    const password = document.getElementById("password");
-    const pantallaLogin = document.getElementById("pantallaLogin");
-    const dashboard = document.getElementById("dashboard");
-    const cerrarSesion = document.getElementById("cerrarSesion");
 
-    if (localStorage.getItem(STORAGE.sesion) === "true") {
-        pantallaLogin.classList.add("oculto");
-        dashboard.classList.remove("oculto");
+    const loginForm =
+        document.getElementById(
+            "loginForm"
+        );
+
+    const mostrarPassword =
+        document.getElementById(
+            "mostrarPassword"
+        );
+
+    const password =
+        document.getElementById(
+            "password"
+        );
+
+    const pantallaLogin =
+        document.getElementById(
+            "pantallaLogin"
+        );
+
+    const dashboard =
+        document.getElementById(
+            "dashboard"
+        );
+
+    const cerrarSesion =
+        document.getElementById(
+            "cerrarSesion"
+        );
+
+    if (
+        !pantallaLogin ||
+        !dashboard
+    ) {
+        return;
     }
 
-    loginForm?.addEventListener("submit", function(e) {
-        e.preventDefault();
+    if (
+        localStorage.getItem(
+            STORAGE.sesion
+        ) === "true"
+    ) {
 
-        const usuario = document.getElementById("usuario").value.trim();
-        const clave = document.getElementById("password").value;
+        pantallaLogin.classList.add(
+            "oculto"
+        );
 
-        if (!usuario || !clave) {
-            mostrarMensaje("Ingresa usuario y contraseña.", "error");
-            return;
+        dashboard.classList.remove(
+            "oculto"
+        );
+    }
+
+    loginForm?.addEventListener(
+        "submit",
+        async function(e) {
+
+            e.preventDefault();
+
+            const usuario =
+                document
+                    .getElementById(
+                        "usuario"
+                    )
+                    ?.value
+                    .trim();
+
+            const clave =
+                document
+                    .getElementById(
+                        "password"
+                    )
+                    ?.value || "";
+
+            if (
+                !usuario ||
+                !clave
+            ) {
+
+                mostrarMensaje(
+                    "Ingresa usuario y contraseña.",
+                    "error"
+                );
+
+                return;
+            }
+
+            /*
+               El login existente sigue siendo visual.
+               Los datos de empleados/inventario/entregas
+               sí vienen de Supabase.
+            */
+
+            localStorage.setItem(
+                STORAGE.sesion,
+                "true"
+            );
+
+            pantallaLogin.classList.add(
+                "oculto"
+            );
+
+            dashboard.classList.remove(
+                "oculto"
+            );
+
+            await cargarDashboard();
         }
+    );
 
-        localStorage.setItem(STORAGE.sesion, "true");
+    mostrarPassword?.addEventListener(
+        "click",
+        function() {
 
-        pantallaLogin.classList.add("oculto");
-        dashboard.classList.remove("oculto");
+            if (!password) {
+                return;
+            }
 
-        cargarDashboard();
-    });
+            if (
+                password.type ===
+                "password"
+            ) {
 
-    mostrarPassword?.addEventListener("click", function() {
-        if (password.type === "password") {
-            password.type = "text";
-            this.textContent = "🙈";
-        } else {
-            password.type = "password";
-            this.textContent = "👁️";
+                password.type =
+                    "text";
+
+                this.textContent =
+                    "🙈";
+
+            } else {
+
+                password.type =
+                    "password";
+
+                this.textContent =
+                    "👁️";
+            }
         }
-    });
+    );
 
-    document.getElementById("olvidoPassword")?.addEventListener("click", () => {
-        alert("Contacta al administrador del sistema para restablecer la contraseña.");
-    });
+    document
+        .getElementById(
+            "olvidoPassword"
+        )
+        ?.addEventListener(
+            "click",
+            () => {
 
-    cerrarSesion?.addEventListener("click", () => {
-        localStorage.removeItem(STORAGE.sesion);
-        dashboard.classList.add("oculto");
-        pantallaLogin.classList.remove("oculto");
-        document.getElementById("password").value = "";
-    });
+                alert(
+                    "Contacta al administrador del sistema para restablecer la contraseña."
+                );
+            }
+        );
+
+    cerrarSesion?.addEventListener(
+        "click",
+        () => {
+
+            localStorage.removeItem(
+                STORAGE.sesion
+            );
+
+            dashboard.classList.add(
+                "oculto"
+            );
+
+            pantallaLogin.classList.remove(
+                "oculto"
+            );
+
+            if (password) {
+                password.value = "";
+            }
+        }
+    );
 }
 
 /* =========================================================
@@ -192,66 +497,147 @@ function iniciarLogin() {
    ========================================================= */
 
 function iniciarNavegacion() {
-    const botones = document.querySelectorAll("[data-seccion]");
 
-    botones.forEach(boton => {
-        boton.addEventListener("click", function() {
-            mostrarSeccion(this.dataset.seccion);
-        });
-    });
+    document
+        .querySelectorAll(
+            "[data-seccion]"
+        )
+        .forEach(
+            boton => {
 
-    document.getElementById("btnMenuMovil")?.addEventListener("click", () => {
-        document.querySelector(".sidebar")?.classList.toggle("abierta");
-    });
+                boton.addEventListener(
+                    "click",
+                    function() {
+
+                        mostrarSeccion(
+                            this.dataset.seccion
+                        );
+                    }
+                );
+            }
+        );
+
+    document
+        .getElementById(
+            "btnMenuMovil"
+        )
+        ?.addEventListener(
+            "click",
+            () => {
+
+                document
+                    .querySelector(
+                        ".sidebar"
+                    )
+                    ?.classList.toggle(
+                        "abierta"
+                    );
+            }
+        );
 }
 
-function mostrarSeccion(id) {
-    document.querySelectorAll(".seccion").forEach(seccion => {
-        seccion.classList.remove("activa");
-    });
+function mostrarSeccion(
+    id
+) {
 
-    const seccion = document.getElementById(id);
+    document
+        .querySelectorAll(
+            ".seccion"
+        )
+        .forEach(
+            seccion => {
+                seccion.classList.remove(
+                    "activa"
+                );
+            }
+        );
+
+    const seccion =
+        document.getElementById(
+            id
+        );
 
     if (seccion) {
-        seccion.classList.add("activa");
+        seccion.classList.add(
+            "activa"
+        );
     }
 
-    document.querySelectorAll(".menu-item").forEach(item => {
-        item.classList.toggle(
-            "activo",
-            item.dataset.seccion === id
+    document
+        .querySelectorAll(
+            ".menu-item"
+        )
+        .forEach(
+            item => {
+
+                item.classList.toggle(
+                    "activo",
+                    item.dataset.seccion ===
+                    id
+                );
+            }
         );
-    });
 
     const titulos = {
-        "seccion-inicio": "Buenos días, Adriana 👋",
-        "seccion-empleados": "Gestión de empleados",
-        "seccion-dotacion": "Control de dotación",
-        "seccion-historial": "Historial del sistema",
-        "seccion-reportes": "Reportes",
-        "seccion-configuracion": "Configuración"
+
+        "seccion-inicio":
+            "Buenos días, Adriana 👋",
+
+        "seccion-empleados":
+            "Gestión de empleados",
+
+        "seccion-dotacion":
+            "Control de dotación",
+
+        "seccion-historial":
+            "Historial del sistema",
+
+        "seccion-reportes":
+            "Reportes",
+
+        "seccion-configuracion":
+            "Configuración"
     };
 
-    const titulo = document.getElementById("tituloSeccion");
+    const titulo =
+        document.getElementById(
+            "tituloSeccion"
+        );
 
     if (titulo) {
-        titulo.textContent = titulos[id] || "Control-Dotación";
+
+        titulo.textContent =
+            titulos[id] ||
+            "Control-Dotación";
     }
 
-    if (id === "seccion-reportes") {
-        renderReportes();
-    }
-
-    if (id === "seccion-dotacion") {
-        renderDotacion();
-    }
-
-    if (id === "seccion-empleados") {
+    if (
+        id ===
+        "seccion-empleados"
+    ) {
         renderEmpleados();
     }
 
-    if (id === "seccion-historial") {
+    if (
+        id ===
+        "seccion-dotacion"
+    ) {
+        renderDotacion();
+        renderInventario();
+    }
+
+    if (
+        id ===
+        "seccion-historial"
+    ) {
         renderHistorial();
+    }
+
+    if (
+        id ===
+        "seccion-reportes"
+    ) {
+        renderReportes();
     }
 }
 
@@ -260,207 +646,735 @@ function mostrarSeccion(id) {
    ========================================================= */
 
 function iniciarEmpleados() {
-    document.getElementById("nuevoEmpleado")?.addEventListener("click", () => {
-        abrirModalEmpleado();
-    });
 
-    document.getElementById("cerrarModalEmpleado")?.addEventListener("click", cerrarModalEmpleado);
-    document.getElementById("cancelarEmpleado")?.addEventListener("click", cerrarModalEmpleado);
+    document
+        .getElementById(
+            "nuevoEmpleado"
+        )
+        ?.addEventListener(
+            "click",
+            () => {
+                abrirModalEmpleado();
+            }
+        );
 
-    document.getElementById("formEmpleado")?.addEventListener("submit", guardarEmpleado);
+    document
+        .getElementById(
+            "cerrarModalEmpleado"
+        )
+        ?.addEventListener(
+            "click",
+            cerrarModalEmpleado
+        );
 
-    document.getElementById("buscarEmpleado")?.addEventListener("input", renderEmpleados);
+    document
+        .getElementById(
+            "cancelarEmpleado"
+        )
+        ?.addEventListener(
+            "click",
+            cerrarModalEmpleado
+        );
 
-    document.getElementById("agregarTalla")?.addEventListener("click", agregarTallaExtra);
+    document
+        .getElementById(
+            "formEmpleado"
+        )
+        ?.addEventListener(
+            "submit",
+            guardarEmpleado
+        );
 
-    document.getElementById("empleadoFoto")?.addEventListener("change", vistaPreviaFoto);
+    document
+        .getElementById(
+            "buscarEmpleado"
+        )
+        ?.addEventListener(
+            "input",
+            renderEmpleados
+        );
 
-    renderEmpleados();
+    document
+        .getElementById(
+            "agregarTalla"
+        )
+        ?.addEventListener(
+            "click",
+            agregarTallaExtra
+        );
+
+    document
+        .getElementById(
+            "empleadoFoto"
+        )
+        ?.addEventListener(
+            "change",
+            vistaPreviaFoto
+        );
 }
 
-function abrirModalEmpleado(id = null) {
-    const modal = document.getElementById("modalEmpleado");
-    const form = document.getElementById("formEmpleado");
+function abrirModalEmpleado(
+    id = null
+) {
 
-    if (!modal || !form) return;
+    const modal =
+        document.getElementById(
+            "modalEmpleado"
+        );
 
-    empleadoEditando = id;
+    const form =
+        document.getElementById(
+            "formEmpleado"
+        );
 
-    form.reset();
-
-    document.getElementById("empleadoId").value = id || "";
-    document.getElementById("listaTallas").innerHTML = "";
-
-    if (id) {
-        const empleado = obtenerEmpleado(id);
-
-        if (!empleado) return;
-
-        document.getElementById("tituloModalEmpleado").textContent = "Editar empleado";
-
-        document.getElementById("empleadoCodigo").value = empleado.codigo || "";
-        document.getElementById("empleadoDocumento").value = empleado.documento || "";
-        document.getElementById("empleadoNombre").value = empleado.nombre || "";
-        document.getElementById("empleadoCargo").value = empleado.cargo || "";
-        document.getElementById("empleadoArea").value = empleado.area || "";
-        document.getElementById("empleadoEstado").value = empleado.estado || "Activo";
-        document.getElementById("empleadoTalla").value = empleado.tallaCamisa || "";
-        document.getElementById("empleadoTallaPantalon").value = empleado.tallaPantalon || "";
-        document.getElementById("empleadoTallaCalzado").value = empleado.tallaCalzado || "";
-
-        if (empleado.foto) {
-            document.getElementById("vistaFotoEmpleado").innerHTML =
-                `<img src="${empleado.foto}" alt="Foto">`;
-        } else {
-            document.getElementById("vistaFotoEmpleado").textContent = "👤";
-        }
-
-        if (empleado.tallasExtra) {
-            empleado.tallasExtra.forEach(talla => agregarTallaExtra(talla));
-        }
-
-    } else {
-        document.getElementById("tituloModalEmpleado").textContent = "Nuevo empleado";
-        document.getElementById("vistaFotoEmpleado").textContent = "👤";
-    }
-
-    modal.classList.remove("oculto");
-}
-
-function cerrarModalEmpleado() {
-    document.getElementById("modalEmpleado")?.classList.add("oculto");
-    empleadoEditando = null;
-}
-
-function vistaPreviaFoto(e) {
-    const archivo = e.target.files[0];
-
-    if (!archivo) return;
-
-    const lector = new FileReader();
-
-    lector.onload = function(event) {
-        document.getElementById("vistaFotoEmpleado").innerHTML =
-            `<img src="${event.target.result}" alt="Foto">`;
-    };
-
-    lector.readAsDataURL(archivo);
-}
-
-function agregarTallaExtra(datos = null) {
-    const lista = document.getElementById("listaTallas");
-
-    if (!lista) return;
-
-    const fila = document.createElement("div");
-
-    fila.className = "fila-talla-extra";
-
-    fila.innerHTML = `
-        <input 
-            type="text" 
-            class="talla-extra-nombre"
-            placeholder="Ej. Chaqueta"
-            value="${escapeHTML(datos?.nombre || "")}"
-        >
-        <input 
-            type="text" 
-            class="talla-extra-valor"
-            placeholder="Talla"
-            value="${escapeHTML(datos?.valor || "")}"
-        >
-        <button type="button" class="btn-eliminar-talla">×</button>
-    `;
-
-    fila.querySelector(".btn-eliminar-talla").addEventListener("click", () => {
-        fila.remove();
-    });
-
-    lista.appendChild(fila);
-}
-
-async function guardarEmpleado(e) {
-  e.preventDefault();
-
-  const documento = document.getElementById("empleadoDocumento").value.trim();
-  const nombre = document.getElementById("empleadoNombre").value.trim();
-  const cargo = document.getElementById("empleadoCargo").value.trim();
-
-  if (!documento || !nombre || !cargo) {
-    alert("Completa los campos obligatorios.");
-    return;
-  }
-
-  const { data, error } = await supabaseClient
-    .from('empleados')
-    .insert([
-      { 
-        cedula: documento, 
-        nombre: nombre, 
-        cargo: cargo 
-      }
-    ]);
-
-  if (error) {
-    alert("Error al guardar en Supabase: " + error.message);
-  } else {
-    alert("¡Empleado guardado exitosamente en Supabase!");
-    renderEmpleados();
-  }
-}
-
-async function renderEmpleados() {
-  const body = document.getElementById("tablaEmpleadosBody");
-  if (!body) return;
-
-  const { data: empleados, error } = await supabaseClient
-    .from('empleados')
-    .select('*');
-
-  if (error) {
-    console.error("Error al consultar empleados:", error);
-    return;
-  }
-
-  body.innerHTML = "";
-
-  empleados.forEach(empleado => {
-    const tr = document.createElement("tr");
-    tr.innerHTML = `
-      <td>${empleado.cedula || ''}</td>
-      <td>${empleado.nombre || ''}</td>
-      <td>${empleado.cargo || ''}</td>
-    `;
-    body.appendChild(tr);
-  });
-}
-
-
-function eliminarEmpleado(id) {
-    const empleado = obtenerEmpleado(id);
-
-    if (!empleado) return;
-
-    const tieneEntregas = entregas.some(e => e.empleadoId === id);
-
-    if (tieneEntregas) {
-        alert("No puedes eliminar este empleado porque tiene entregas registradas.");
+    if (!modal || !form) {
         return;
     }
 
-    if (!confirm(`¿Eliminar a ${empleado.nombre}?`)) return;
+    empleadoEditando =
+        id;
 
-    empleados = empleados.filter(e => e.id !== id);
+    form.reset();
 
-    guardar(STORAGE.empleados, empleados);
+    const idInput =
+        document.getElementById(
+            "empleadoId"
+        );
+
+    if (idInput) {
+        idInput.value =
+            id || "";
+    }
+
+    const listaTallas =
+        document.getElementById(
+            "listaTallas"
+        );
+
+    if (listaTallas) {
+        listaTallas.innerHTML =
+            "";
+    }
+
+    const vistaFoto =
+        document.getElementById(
+            "vistaFotoEmpleado"
+        );
+
+    if (id) {
+
+        const empleado =
+            obtenerEmpleado(id);
+
+        if (!empleado) {
+            return;
+        }
+
+        document
+            .getElementById(
+                "tituloModalEmpleado"
+            )
+            ?.replaceChildren(
+                document.createTextNode(
+                    "Editar empleado"
+                )
+            );
+
+        const documento =
+            document.getElementById(
+                "empleadoDocumento"
+            );
+
+        if (documento) {
+            documento.value =
+                empleado.cedula ||
+                "";
+        }
+
+        const nombre =
+            document.getElementById(
+                "empleadoNombre"
+            );
+
+        if (nombre) {
+            nombre.value =
+                empleado.nombre ||
+                "";
+        }
+
+        const cargo =
+            document.getElementById(
+                "empleadoCargo"
+            );
+
+        if (cargo) {
+            cargo.value =
+                empleado.cargo ||
+                "";
+        }
+
+        const tallaCamiseta =
+            document.getElementById(
+                "empleadoTalla"
+            );
+
+        if (tallaCamiseta) {
+            tallaCamiseta.value =
+                empleado.talla_camiseta ||
+                "";
+        }
+
+        const tallaPantalon =
+            document.getElementById(
+                "empleadoTallaPantalon"
+            );
+
+        if (tallaPantalon) {
+            tallaPantalon.value =
+                empleado.talla_pantalon ||
+                "";
+        }
+
+        /*
+           Estos campos pueden existir
+           visualmente en tu HTML, pero
+           no están en la tabla actual
+           de Supabase, por eso no se usan
+           para guardar.
+        */
+
+        const codigo =
+            document.getElementById(
+                "empleadoCodigo"
+            );
+
+        if (codigo) {
+            codigo.value =
+                "";
+        }
+
+        const area =
+            document.getElementById(
+                "empleadoArea"
+            );
+
+        if (area) {
+            area.value =
+                "";
+        }
+
+        const estado =
+            document.getElementById(
+                "empleadoEstado"
+            );
+
+        if (estado) {
+            estado.value =
+                "Activo";
+        }
+
+        const tallaCalzado =
+            document.getElementById(
+                "empleadoTallaCalzado"
+            );
+
+        if (tallaCalzado) {
+            tallaCalzado.value =
+                "";
+        }
+
+        if (vistaFoto) {
+            vistaFoto.textContent =
+                "👤";
+        }
+
+    } else {
+
+        document
+            .getElementById(
+                "tituloModalEmpleado"
+            )
+            ?.replaceChildren(
+                document.createTextNode(
+                    "Nuevo empleado"
+                )
+            );
+
+        if (vistaFoto) {
+            vistaFoto.textContent =
+                "👤";
+        }
+    }
+
+    modal.classList.remove(
+        "oculto"
+    );
+}
+
+function cerrarModalEmpleado() {
+
+    document
+        .getElementById(
+            "modalEmpleado"
+        )
+        ?.classList.add(
+            "oculto"
+        );
+
+    empleadoEditando =
+        null;
+}
+
+function vistaPreviaFoto(
+    e
+) {
+
+    const archivo =
+        e.target.files?.[0];
+
+    if (!archivo) {
+        return;
+    }
+
+    const lector =
+        new FileReader();
+
+    lector.onload =
+        function(event) {
+
+            const vista =
+                document.getElementById(
+                    "vistaFotoEmpleado"
+                );
+
+            if (vista) {
+
+                vista.innerHTML =
+                    `<img src="${event.target.result}" alt="Foto">`;
+            }
+        };
+
+    lector.readAsDataURL(
+        archivo
+    );
+}
+
+function agregarTallaExtra() {
+
+    const lista =
+        document.getElementById(
+            "listaTallas"
+        );
+
+    if (!lista) {
+        return;
+    }
+
+    const fila =
+        document.createElement(
+            "div"
+        );
+
+    fila.className =
+        "fila-talla-extra";
+
+    fila.innerHTML = `
+        <input
+            type="text"
+            class="talla-extra-nombre"
+            placeholder="Ej. Chaqueta"
+        >
+
+        <input
+            type="text"
+            class="talla-extra-valor"
+            placeholder="Talla"
+        >
+
+        <button
+            type="button"
+            class="btn-eliminar-talla"
+        >
+            ×
+        </button>
+    `;
+
+    fila
+        .querySelector(
+            ".btn-eliminar-talla"
+        )
+        ?.addEventListener(
+            "click",
+            () => {
+                fila.remove();
+            }
+        );
+
+    lista.appendChild(
+        fila
+    );
+}
+
+async function guardarEmpleado(
+    e
+) {
+
+    e.preventDefault();
+
+    const cedula =
+        document
+            .getElementById(
+                "empleadoDocumento"
+            )
+            ?.value
+            .trim() || "";
+
+    const nombre =
+        document
+            .getElementById(
+                "empleadoNombre"
+            )
+            ?.value
+            .trim() || "";
+
+    const cargo =
+        document
+            .getElementById(
+                "empleadoCargo"
+            )
+            ?.value
+            .trim() || "";
+
+    const tallaCamiseta =
+        document
+            .getElementById(
+                "empleadoTalla"
+            )
+            ?.value
+            .trim() || null;
+
+    const tallaPantalon =
+        document
+            .getElementById(
+                "empleadoTallaPantalon"
+            )
+            ?.value
+            .trim() || null;
+
+    if (
+        !cedula ||
+        !nombre ||
+        !cargo
+    ) {
+
+        alert(
+            "Completa los campos obligatorios."
+        );
+
+        return;
+    }
+
+    const datos = {
+
+        nombre,
+
+        cedula,
+
+        cargo,
+
+        talla_camiseta:
+            tallaCamiseta,
+
+        talla_pantalon:
+            tallaPantalon
+    };
+
+    let resultado;
+
+    if (
+        empleadoEditando
+    ) {
+
+        resultado =
+            await supabaseClient
+                .from("empleados")
+                .update(
+                    datos
+                )
+                .eq(
+                    "id",
+                    empleadoEditando
+                )
+                .select();
+
+    } else {
+
+        resultado =
+            await supabaseClient
+                .from("empleados")
+                .insert(
+                    [datos]
+                )
+                .select();
+    }
+
+    if (
+        resultado.error
+    ) {
+
+        console.error(
+            resultado.error
+        );
+
+        alert(
+            "Error al guardar el empleado:\n\n" +
+            resultado.error.message
+        );
+
+        return;
+    }
+
+    agregarHistorial(
+        empleadoEditando
+            ? "Empleado actualizado"
+            : "Empleado creado",
+        `${nombre} - ${cedula}`
+    );
+
+    alert(
+        empleadoEditando
+            ? "Empleado actualizado correctamente."
+            : "Empleado guardado correctamente."
+    );
+
+    cerrarModalEmpleado();
+
+    await cargarDatosSupabase();
+
+    renderEmpleados();
+
+    cargarEmpleadosSelect();
+
+    actualizarResumenDotacion();
+}
+
+function renderEmpleados() {
+
+    const body =
+        document.getElementById(
+            "tablaEmpleadosBody"
+        );
+
+    if (!body) {
+        return;
+    }
+
+    const texto =
+        document
+            .getElementById(
+                "buscarEmpleado"
+            )
+            ?.value
+            .trim()
+            .toLowerCase() || "";
+
+    const lista =
+        empleados.filter(
+            empleado => {
+
+                if (!texto) {
+                    return true;
+                }
+
+                return `
+                    ${empleado.nombre || ""}
+                    ${empleado.cedula || ""}
+                    ${empleado.cargo || ""}
+                `
+                    .toLowerCase()
+                    .includes(
+                        texto
+                    );
+            }
+        );
+
+    body.innerHTML = "";
+
+    lista.forEach(
+        empleado => {
+
+            const tr =
+                document.createElement(
+                    "tr"
+                );
+
+            tr.innerHTML = `
+                <td>
+                    ${escapeHTML(
+                        empleado.cedula || ""
+                    )}
+                </td>
+
+                <td>
+                    ${escapeHTML(
+                        empleado.nombre || ""
+                    )}
+                </td>
+
+                <td>
+                    ${escapeHTML(
+                        empleado.cargo || ""
+                    )}
+                </td>
+
+                <td>
+                    ${escapeHTML(
+                        empleado.talla_camiseta || "-"
+                    )}
+                </td>
+
+                <td>
+                    ${escapeHTML(
+                        empleado.talla_pantalon || "-"
+                    )}
+                </td>
+
+                <td>
+                    <button
+                        type="button"
+                        class="btn-tabla btn-editar-empleado"
+                        data-id="${empleado.id}"
+                    >
+                        ✏️
+                    </button>
+
+                    <button
+                        type="button"
+                        class="btn-tabla btn-eliminar-empleado"
+                        data-id="${empleado.id}"
+                    >
+                        🗑️
+                    </button>
+                </td>
+            `;
+
+            body.appendChild(
+                tr
+            );
+        }
+    );
+
+    body
+        .querySelectorAll(
+            ".btn-editar-empleado"
+        )
+        .forEach(
+            boton => {
+
+                boton.addEventListener(
+                    "click",
+                    () => {
+
+                        abrirModalEmpleado(
+                            boton.dataset.id
+                        );
+                    }
+                );
+            }
+        );
+
+    body
+        .querySelectorAll(
+            ".btn-eliminar-empleado"
+        )
+        .forEach(
+            boton => {
+
+                boton.addEventListener(
+                    "click",
+                    () => {
+
+                        eliminarEmpleado(
+                            boton.dataset.id
+                        );
+                    }
+                );
+            }
+        );
+}
+
+async function eliminarEmpleado(
+    id
+) {
+
+    const empleado =
+        obtenerEmpleado(id);
+
+    if (!empleado) {
+        return;
+    }
+
+    const tieneEntregas =
+        entregas.some(
+            entrega =>
+                Number(
+                    entrega.empleado
+                ) ===
+                Number(id)
+        );
+
+    if (tieneEntregas) {
+
+        alert(
+            "No puedes eliminar este empleado porque tiene entregas registradas."
+        );
+
+        return;
+    }
+
+    if (
+        !confirm(
+            `¿Eliminar a ${empleado.nombre}?`
+        )
+    ) {
+        return;
+    }
+
+    const {
+        error
+    } =
+        await supabaseClient
+            .from("empleados")
+            .delete()
+            .eq(
+                "id",
+                id
+            );
+
+    if (error) {
+
+        console.error(
+            error
+        );
+
+        alert(
+            "No se pudo eliminar el empleado:\n\n" +
+            error.message
+        );
+
+        return;
+    }
 
     agregarHistorial(
         "Empleado eliminado",
-        `Se eliminó el empleado ${empleado.nombre}.`
+        empleado.nombre
     );
 
+    await cargarDatosSupabase();
+
     renderEmpleados();
-    actualizarTodo();
+
+    cargarEmpleadosSelect();
 }
 
 /* =========================================================
@@ -468,592 +1382,1842 @@ function eliminarEmpleado(id) {
    ========================================================= */
 
 function iniciarEntregas() {
-    document.getElementById("nuevaEntrega")?.addEventListener("click", () => {
-        abrirModalEntrega();
-    });
 
-    document.getElementById("cerrarModalEntrega")?.addEventListener("click", cerrarModalEntrega);
-    document.getElementById("cancelarEntrega")?.addEventListener("click", cerrarModalEntrega);
+    document
+        .getElementById(
+            "nuevaEntrega"
+        )
+        ?.addEventListener(
+            "click",
+            () => {
+                abrirModalEntrega();
+            }
+        );
 
-    document.getElementById("formEntrega")?.addEventListener("submit", guardarEntrega);
+    document
+        .getElementById(
+            "cerrarModalEntrega"
+        )
+        ?.addEventListener(
+            "click",
+            cerrarModalEntrega
+        );
 
-    document.getElementById("buscarEntrega")?.addEventListener("input", renderDotacion);
+    document
+        .getElementById(
+            "cancelarEntrega"
+        )
+        ?.addEventListener(
+            "click",
+            cerrarModalEntrega
+        );
 
-    document.getElementById("entregaEmpleado")?.addEventListener("change", actualizarTallasEntrega);
-    document.getElementById("entregaElemento")?.addEventListener("change", actualizarTallasEntrega);
+    document
+        .getElementById(
+            "formEntrega"
+        )
+        ?.addEventListener(
+            "submit",
+            guardarEntrega
+        );
 
-    cargarEmpleadosSelect();
-    renderDotacion();
+    document
+        .getElementById(
+            "buscarEntrega"
+        )
+        ?.addEventListener(
+            "input",
+            renderDotacion
+        );
+
+    document
+        .getElementById(
+            "entregaEmpleado"
+        )
+        ?.addEventListener(
+            "change",
+            actualizarTallasEntrega
+        );
+
+    document
+        .getElementById(
+            "entregaElemento"
+        )
+        ?.addEventListener(
+            "change",
+            actualizarStockDisponible
+        );
 }
 
 function cargarEmpleadosSelect() {
-    const select = document.getElementById("entregaEmpleado");
 
-    if (!select) return;
+    const select =
+        document.getElementById(
+            "entregaEmpleado"
+        );
 
-    const valorActual = select.value;
+    if (!select) {
+        return;
+    }
+
+    const valorActual =
+        select.value;
 
     select.innerHTML = `
-        <option value="">Seleccionar empleado</option>
-        ${empleados
-            .filter(e => e.estado === "Activo")
-            .map(e => `
-                <option value="${e.id}">
-                    ${escapeHTML(e.nombre)} - ${escapeHTML(e.codigo)}
-                </option>
-            `).join("")}
+        <option value="">
+            Seleccionar empleado
+        </option>
     `;
 
-    if (valorActual) {
-        select.value = valorActual;
+    empleados.forEach(
+        empleado => {
+
+            const option =
+                document.createElement(
+                    "option"
+                );
+
+            option.value =
+                empleado.id;
+
+            option.textContent =
+                `${empleado.nombre || ""} - ${
+                    empleado.cedula || ""
+                }`;
+
+            select.appendChild(
+                option
+            );
+        }
+    );
+
+    if (
+        valorActual
+    ) {
+        select.value =
+            valorActual;
     }
 }
 
-function abrirModalEntrega(id = null) {
-    const modal = document.getElementById("modalEntrega");
-    const form = document.getElementById("formEntrega");
-    function obtenerStock(elemento) {
-  const registro = inventario.find(i => i.elemento === elemento);
+function cargarElementosSelect() {
 
-  if (!registro) return 0;
+    const select =
+        document.getElementById(
+            "entregaElemento"
+        );
 
-  return Number(registro.stock || 0);
-}
-
-// === PEGA AQUÍ LAS FUNCIONES NUEVAS ===
-async function guardarElemento(e) {
-  e.preventDefault();
-
-  const nombre = document.getElementById("inventarioNombre").value.trim();
-  const categoria = document.getElementById("inventarioCategoria").value.trim();
-  const cantidad = parseInt(document.getElementById("inventarioCantidad").value) || 0;
-
-  if (!nombre || !categoria) {
-    alert("Completa los campos obligatorios del inventario.");
-    return;
-  }
-
-  const { data, error } = await supabaseClient
-    .from('inventario')
-    .insert([
-      { 
-        nombre: nombre, 
-        categoria: categoria, 
-        cantidad: cantidad 
-      }
-    ]);
-
-  if (error) {
-    alert("Error al guardar en el inventario: " + error.message);
-  } else {
-    alert("¡Elemento de inventario guardado con éxito!");
-    renderInventario();
-  }
-}
-
-async function renderInventario() {
-  const body = document.getElementById("tablaInventarioBody");
-  if (!body) return;
-
-  const { data: inventario, error } = await supabaseClient
-    .from('inventario')
-    .select('*');
-
-  if (error) {
-    console.error("Error al consultar inventario:", error);
-    return;
-  }
-
-  body.innerHTML = "";
-
-  inventario.forEach(item => {
-    const tr = document.createElement("tr");
-    tr.innerHTML = `
-      <td>${item.nombre || ''}</td>
-      <td>${item.categoria || ''}</td>
-      <td>${item.cantidad ?? 0}</td>
-    `;
-    body.appendChild(tr);
-  });
-}
-
-async function guardarEntrega(e) {
-  e.preventDefault();
-
-  const empleadoId = document.getElementById("entregaEmpleado").value;
-  const elemento = document.getElementById("entregaElemento").value;
-  const cantidad = Number(document.getElementById("entregaCantidad").value);
-  const estado = document.getElementById("entregaEstado").value;
-
-  if (!empleadoId || !elemento || cantidad < 1) {
-    alert("Completa los datos obligatorios de la entrega.");
-    return;
-  }
-
-  // Guardar en la tabla 'entregas' de Supabase
-  const { data, error } = await supabaseClient
-    .from('entregas')
-    .insert([
-      {
-        empleado_id: empleadoId,
-        elemento: elemento,
-        cantidad: cantidad,
-        estado: estado,
-        fecha: new Date().toISOString()
-      }
-    ]);
-
-  if (error) {
-    alert("Error al registrar la entrega: " + error.message);
-  } else {
-    alert("¡Entrega registrada con éxito en Supabase!");
-    if (typeof renderEntregas === "function") {
-      renderEntregas();
+    if (!select) {
+        return;
     }
-  }
-}
 
-}
+    const valorActual =
+        select.value;
 
-if (error) {
-    alert("Error al registrar la entrega: " + error.message);
-  } else {
-    alert("¡Entrega registrada con éxito en Supabase!");
-    if (typeof renderEntregas === "function") {
-      renderEntregas();
-    }
-  }
-
-async function renderEntregas() {
-  const body = document.getElementById("tablaEntregasBody");
-  if (!body) return;
-
-  const { data: entregas, error } = await supabaseClient
-    .from('entregas')
-    .select('*');
-
-  if (error) {
-    console.error("Error al consultar entregas:", error);
-    return;
-  }
-
-  body.innerHTML = "";
-
-  entregas.forEach(entrega => {
-    const tr = document.createElement("tr");
-    tr.innerHTML = `
-      <td>${entrega.empleado_id || ''}</td>
-      <td>${entrega.elemento || ''}</td>
-      <td>${entrega.cantidad ?? 0}</td>
-      <td>${entrega.estado || ''}</td>
-      <td>${entrega.fecha ? new Date(entrega.fecha).toLocaleDateString() : ''}</td>
+    select.innerHTML = `
+        <option value="">
+            Seleccionar elemento
+        </option>
     `;
-    body.appendChild(tr);
-  });
+
+    inventario.forEach(
+        item => {
+
+            const option =
+                document.createElement(
+                    "option"
+                );
+
+            option.value =
+                item.elemento || "";
+
+            option.textContent =
+                `${item.elemento || ""}${
+                    item.talla
+                        ? ` - ${item.talla}`
+                        : ""
+                } - Stock: ${
+                    Number(
+                        item.stock || 0
+                    )
+                }`;
+
+            select.appendChild(
+                option
+            );
+        }
+    );
+
+    if (
+        valorActual
+    ) {
+        select.value =
+            valorActual;
+    }
+}
+
+function abrirModalEntrega(
+    id = null
+) {
+
+    const modal =
+        document.getElementById(
+            "modalEntrega"
+        );
+
+    const form =
+        document.getElementById(
+            "formEntrega"
+        );
+
+    if (!modal || !form) {
+        return;
+    }
+
+    entregaEditando =
+        id;
+
+    form.reset();
+
+    cargarEmpleadosSelect();
+
+    cargarElementosSelect();
+
+    const fecha =
+        document.getElementById(
+            "entregaFecha"
+        );
+
+    if (fecha) {
+        fecha.value =
+            fechaActual();
+    }
+
+    const titulo =
+        document.getElementById(
+            "tituloModalEntrega"
+        );
+
+    if (titulo) {
+        titulo.textContent =
+            id
+                ? "Editar entrega"
+                : "Nueva entrega";
+    }
+
+    if (id) {
+
+        const entrega =
+            entregas.find(
+                item =>
+                    Number(
+                        item.id
+                    ) ===
+                    Number(id)
+            );
+
+        if (!entrega) {
+            return;
+        }
+
+        const empleado =
+            document.getElementById(
+                "entregaEmpleado"
+            );
+
+        if (empleado) {
+            empleado.value =
+                entrega.empleado || "";
+        }
+
+        const elemento =
+            document.getElementById(
+                "entregaElemento"
+            );
+
+        if (elemento) {
+            elemento.value =
+                entrega.elemento || "";
+        }
+
+        const cantidad =
+            document.getElementById(
+                "entregaCantidad"
+            );
+
+        if (cantidad) {
+            cantidad.value =
+                entrega.cantidades || 1;
+        }
+
+        const comentarios =
+            document.getElementById(
+                "entregaComentarios"
+            );
+
+        if (comentarios) {
+            comentarios.value =
+                entrega.comentarios || "";
+        }
+
+        const fechaEntrega =
+            document.getElementById(
+                "entregaFecha"
+            );
+
+        if (fechaEntrega) {
+
+            fechaEntrega.value =
+                String(
+                    entrega.fecha || ""
+                ).substring(
+                    0,
+                    10
+                );
+        }
+
+    }
+
+    actualizarTallasEntrega();
+
+    actualizarStockDisponible();
+
+    modal.classList.remove(
+        "oculto"
+    );
 }
 
 function cerrarModalEntrega() {
-  document.getElementById("modalEntrega")?.classList.add("oculto");
-  entregaEditando = null;
+
+    document
+        .getElementById(
+            "modalEntrega"
+        )
+        ?.classList.add(
+            "oculto"
+        );
+
+    entregaEditando =
+        null;
 }
 
-function obtenerStock(elemento) {
-    const registro = inventario.find(i => i.elemento === elemento);
+function obtenerRegistroInventario(
+    elemento
+) {
 
-    if (!registro) return 0;
+    return inventario.find(
+        item =>
+            String(
+                item.elemento || ""
+            )
+            .trim()
+            .toLowerCase() ===
 
-    return Number(registro.stock || 0);
+            String(
+                elemento || ""
+            )
+            .trim()
+            .toLowerCase()
+    );
 }
 
-async function guardarEntrega(e) {
-  e.preventDefault();
+function obtenerStock(
+    elemento
+) {
 
-  const empleadoId = document.getElementById("entregaEmpleado").value;
-  const elemento = document.getElementById("entregaElemento").value;
-  const cantidad = Number(document.getElementById("entregaCantidad").value);
-  const estado = document.getElementById("entregaEstado").value;
+    const registro =
+        obtenerRegistroInventario(
+            elemento
+        );
 
-  if (!empleadoId || !elemento || cantidad < 1) {
-    alert("Completa los datos obligatorios de la entrega.");
-    return;
-  }
-
-  // Guardar en la tabla 'entregas' de Supabase
-  const { data, error } = await supabaseClient
-    .from('entregas')
-    .insert([
-      {
-        empleado_id: empleadoId,
-        elemento: elemento,
-        cantidad: cantidad,
-        estado: estado,
-        fecha: new Date().toISOString()
-      }
-    ]);
-
-  if (error) {
-    alert("Error al registrar la entrega: " + error.message);
-  } else {
-    alert("¡Entrega registrada con éxito en Supabase!");
-    if (typeof renderEntregas === "function") {
-      renderEntregas();
+    if (!registro) {
+        return 0;
     }
-  }
+
+    return Number(
+        registro.stock || 0
+    );
 }
+
+function actualizarStockDisponible() {
+
+    const elemento =
+        document
+            .getElementById(
+                "entregaElemento"
+            )
+            ?.value || "";
+
+    const stock =
+        obtenerStock(
+            elemento
+        );
+
+    const ids = [
+        "stockDisponible",
+        "entregaStockDisponible",
+        "stockEntrega"
+    ];
+
+    ids.forEach(
+        id => {
+
+            const elementoHTML =
+                document.getElementById(
+                    id
+                );
+
+            if (elementoHTML) {
+
+                elementoHTML.textContent =
+                    stock;
+            }
+        }
+    );
+}
+
+function actualizarTallasEntrega() {
+
+    const empleadoId =
+        document
+            .getElementById(
+                "entregaEmpleado"
+            )
+            ?.value;
+
+    const empleado =
+        obtenerEmpleado(
+            empleadoId
+        );
+
+    const texto =
+        empleado
+            ? `Camiseta: ${
+                empleado.talla_camiseta || "-"
+            } | Pantalón: ${
+                empleado.talla_pantalon || "-"
+            }`
+            : "";
+
+    [
+        "entregaTalla",
+        "tallaEntrega",
+        "entregaTallas"
+    ].forEach(
+        id => {
+
+            const elementoHTML =
+                document.getElementById(
+                    id
+                );
+
+            if (elementoHTML) {
+
+                elementoHTML.textContent =
+                    texto;
+            }
+        }
+    );
+}
+
+async function guardarEntrega(
+    e
+) {
+
+    e.preventDefault();
+
+    const empleadoId =
+        Number(
+            document
+                .getElementById(
+                    "entregaEmpleado"
+                )
+                ?.value || 0
+        );
+
+    const elemento =
+        document
+            .getElementById(
+                "entregaElemento"
+            )
+            ?.value
+            .trim() || "";
+
+    const cantidad =
+        Number(
+            document
+                .getElementById(
+                    "entregaCantidad"
+                )
+                ?.value || 0
+        );
+
+    const comentarios =
+        document
+            .getElementById(
+                "entregaComentarios"
+            )
+            ?.value
+            .trim() || "";
+
+    const fecha =
+        document
+            .getElementById(
+                "entregaFecha"
+            )
+            ?.value ||
+        fechaActual();
+
+    if (
+        !empleadoId ||
+        !elemento ||
+        cantidad < 1
+    ) {
+
+        alert(
+            "Completa los datos obligatorios de la entrega."
+        );
+
+        return;
+    }
+
+    const item =
+        obtenerRegistroInventario(
+            elemento
+        );
+
+    if (!item) {
+
+        alert(
+            "El elemento seleccionado no existe en el inventario."
+        );
+
+        return;
+    }
+
+    /*
+       -------------------------------------------------------
+       NUEVA ENTREGA
+       -------------------------------------------------------
+    */
+
+    if (
+        !entregaEditando
+    ) {
+
+        const stockActual =
+            Number(
+                item.stock || 0
+            );
+
+        if (
+            cantidad >
+            stockActual
+        ) {
+
+            alert(
+                `Stock insuficiente.\n\nDisponible: ${stockActual}\nSolicitado: ${cantidad}`
+            );
+
+            return;
+        }
+
+        const datos = {
+
+            empleado:
+                empleadoId,
+
+            elemento:
+                elemento,
+
+            cantidades:
+                cantidad,
+
+            fecha:
+                fecha,
+
+            comentarios:
+                comentarios || null
+        };
+
+        const {
+            error
+        } =
+            await supabaseClient
+                .from("entregas")
+                .insert(
+                    [datos]
+                );
+
+        if (error) {
+
+            console.error(
+                error
+            );
+
+            alert(
+                "Error al registrar la entrega:\n\n" +
+                error.message
+            );
+
+            return;
+        }
+
+        /*
+           Descontar stock
+        */
+
+        const nuevoStock =
+            Math.max(
+                0,
+                stockActual -
+                cantidad
+            );
+
+        const {
+            error:
+                errorStock
+        } =
+            await supabaseClient
+                .from("inventario")
+                .update({
+                    stock:
+                        nuevoStock
+                })
+                .eq(
+                    "id",
+                    item.id
+                );
+
+        if (errorStock) {
+
+            console.error(
+                errorStock
+            );
+
+            alert(
+                "La entrega fue guardada, pero ocurrió un error al actualizar el stock:\n\n" +
+                errorStock.message
+            );
+
+        } else {
+
+            alert(
+                "¡Entrega registrada correctamente!"
+            );
+        }
+
+        agregarHistorial(
+            "Entrega registrada",
+            `${cantidad} x ${elemento} para ${obtenerNombreEmpleado(empleadoId)}`
+        );
+
+    } else {
+
+        /*
+           ---------------------------------------------------
+           EDITAR ENTREGA
+           ---------------------------------------------------
+        */
+
+        const entregaAnterior =
+            entregas.find(
+                entrega =>
+                    Number(
+                        entrega.id
+                    ) ===
+                    Number(
+                        entregaEditando
+                    )
+            );
+
+        if (!entregaAnterior) {
+
+            alert(
+                "No se encontró la entrega que deseas editar."
+            );
+
+            return;
+        }
+
+        /*
+           Para editar correctamente el stock:
+           1. devolvemos al inventario la cantidad anterior
+           2. descontamos la cantidad nueva
+        */
+
+        const itemAnterior =
+            obtenerRegistroInventario(
+                entregaAnterior.elemento
+            );
+
+        if (!itemAnterior) {
+
+            alert(
+                "No se encontró el elemento anterior en inventario."
+            );
+
+            return;
+        }
+
+        const stockActual =
+            Number(
+                item.stock || 0
+            );
+
+        const stockTrasDevolverAnterior =
+            stockActual +
+            Number(
+                entregaAnterior.cantidades ||
+                0
+            );
+
+        if (
+            cantidad >
+            stockTrasDevolverAnterior
+        ) {
+
+            alert(
+                `Stock insuficiente para modificar la entrega.\n\nDisponible real: ${stockTrasDevolverAnterior}\nSolicitado: ${cantidad}`
+            );
+
+            return;
+        }
+
+        /*
+           Si cambia el elemento,
+           primero devolvemos el anterior.
+        */
+
+        if (
+            Number(
+                itemAnterior.id
+            ) !==
+            Number(
+                item.id
+            )
+        ) {
+
+            const {
+                error:
+                    devolverError
+            } =
+                await supabaseClient
+                    .from("inventario")
+                    .update({
+                        stock:
+                            Number(
+                                itemAnterior.stock ||
+                                0
+                            ) +
+                            Number(
+                                entregaAnterior.cantidades ||
+                                0
+                            )
+                    })
+                    .eq(
+                        "id",
+                        itemAnterior.id
+                    );
+
+            if (devolverError) {
+
+                alert(
+                    "No se pudo devolver el stock de la entrega anterior:\n\n" +
+                    devolverError.message
+                );
+
+                return;
+            }
+
+            /*
+               Volvemos a consultar
+               el elemento nuevo.
+            */
+
+            await cargarDatosSupabase();
+
+            const itemNuevo =
+                obtenerRegistroInventario(
+                    elemento
+                );
+
+            if (!itemNuevo) {
+
+                alert(
+                    "No se encontró el nuevo elemento."
+                );
+
+                return;
+            }
+
+            if (
+                cantidad >
+                Number(
+                    itemNuevo.stock ||
+                    0
+                )
+            ) {
+
+                alert(
+                    "No hay suficiente stock del nuevo elemento."
+                );
+
+                return;
+            }
+
+            const {
+                error:
+                    descontarError
+            } =
+                await supabaseClient
+                    .from("inventario")
+                    .update({
+                        stock:
+                            Number(
+                                itemNuevo.stock ||
+                                0
+                            ) -
+                            cantidad
+                    })
+                    .eq(
+                        "id",
+                        itemNuevo.id
+                    );
+
+            if (descontarError) {
+
+                alert(
+                    "No se pudo descontar el stock del nuevo elemento:\n\n" +
+                    descontarError.message
+                );
+
+                return;
+            }
+
+        } else {
+
+            const nuevoStock =
+                stockTrasDevolverAnterior -
+                cantidad;
+
+            const {
+                error:
+                    stockError
+            } =
+                await supabaseClient
+                    .from("inventario")
+                    .update({
+                        stock:
+                            nuevoStock
+                    })
+                    .eq(
+                        "id",
+                        item.id
+                    );
+
+            if (stockError) {
+
+                alert(
+                    "No se pudo actualizar el stock:\n\n" +
+                    stockError.message
+                );
+
+                return;
+            }
+        }
+
+        const datosActualizados = {
+
+            empleado:
+                empleadoId,
+
+            elemento:
+                elemento,
+
+            cantidades:
+                cantidad,
+
+            fecha:
+                fecha,
+
+            comentarios:
+                comentarios || null
+        };
+
+        const {
+            error:
+                errorEntrega
+        } =
+            await supabaseClient
+                .from("entregas")
+                .update(
+                    datosActualizados
+                )
+                .eq(
+                    "id",
+                    entregaEditando
+                );
+
+        if (errorEntrega) {
+
+            alert(
+                "No se pudo actualizar la entrega:\n\n" +
+                errorEntrega.message
+            );
+
+            return;
+        }
+
+        alert(
+            "Entrega actualizada correctamente."
+        );
+
+        agregarHistorial(
+            "Entrega actualizada",
+            `${cantidad} x ${elemento} para ${obtenerNombreEmpleado(empleadoId)}`
+        );
+    }
+
+    cerrarModalEntrega();
+
+    await cargarDatosSupabase();
+
+    cargarEmpleadosSelect();
+
+    cargarElementosSelect();
+
+    renderDotacion();
+
+    renderInventario();
+
+    renderReportes();
+
+    renderNotificaciones();
+
+    actualizarResumenDotacion();
+
+    actualizarGraficas();
+}
+
+function renderEntregas() {
+
+    const body =
+        document.getElementById(
+            "tablaEntregasBody"
+        );
+
+    if (!body) {
+        return;
+    }
+
+    const texto =
+        document
+            .getElementById(
+                "buscarEntrega"
+            )
+            ?.value
+            .trim()
+            .toLowerCase() || "";
+
+    let lista =
+        entregas;
+
+    if (texto) {
+
+        lista =
+            entregas.filter(
+                entrega => {
+
+                    const nombre =
+                        obtenerNombreEmpleado(
+                            entrega.empleado
+                        );
+
+                    return `
+                        ${nombre}
+                        ${entrega.elemento || ""}
+                        ${entrega.comentarios || ""}
+                        ${entrega.cantidades || ""}
+                    `
+                        .toLowerCase()
+                        .includes(
+                            texto
+                        );
+                }
+            );
+    }
+
+    body.innerHTML = "";
+
+    lista.forEach(
+        entrega => {
+
+            const tr =
+                document.createElement(
+                    "tr"
+                );
+
+            tr.innerHTML = `
+                <td>
+                    ${escapeHTML(
+                        obtenerNombreEmpleado(
+                            entrega.empleado
+                        )
+                    )}
+                </td>
+
+                <td>
+                    ${escapeHTML(
+                        entrega.elemento || ""
+                    )}
+                </td>
+
+                <td>
+                    ${Number(
+                        entrega.cantidades || 0
+                    )}
+                </td>
+
+                <td>
+                    ${formatearFecha(
+                        entrega.fecha
+                    )}
+                </td>
+
+                <td>
+                    ${escapeHTML(
+                        entrega.comentarios || "-"
+                    )}
+                </td>
+
+                <td>
+                    <button
+                        type="button"
+                        class="btn-tabla btn-editar-entrega"
+                        data-id="${entrega.id}"
+                    >
+                        ✏️
+                    </button>
+                </td>
+            `;
+
+            body.appendChild(
+                tr
+            );
+        }
+    );
+
+    body
+        .querySelectorAll(
+            ".btn-editar-entrega"
+        )
+        .forEach(
+            boton => {
+
+                boton.addEventListener(
+                    "click",
+                    () => {
+
+                        abrirModalEntrega(
+                            boton.dataset.id
+                        );
+                    }
+                );
+            }
+        );
+}
+
 /* =========================================================
    INVENTARIO
    ========================================================= */
 
-function inicializarInventario() {
+function iniciarInventario() {
+
     /*
-       Crea automáticamente los elementos base
-       si todavía no existen.
+       Si tu HTML ya tiene un formulario
+       con estos campos, también funcionará.
     */
 
-    elementosBase.forEach(elemento => {
-        if (!inventario.some(i => i.elemento === elemento)) {
-            inventario.push({
-                id: generarId("INV"),
-                elemento,
-                stock: 0,
-                minimo: 5,
-                movimientos: []
-            });
-        }
-    });
-
-    guardar(STORAGE.inventario, inventario);
-}
-
-function modificarStock(elemento, cantidad, motivo = "Movimiento") {
-    let item = inventario.find(i => i.elemento === elemento);
-
-    if (!item) {
-        item = {
-            id: generarId("INV"),
-            elemento,
-            stock: 0,
-            minimo: 5,
-            movimientos: []
-        };
-
-        inventario.push(item);
-    }
-
-    item.stock = Math.max(
-        0,
-        Number(item.stock || 0) + Number(cantidad)
-    );
-
-    if (!item.movimientos) {
-        item.movimientos = [];
-    }
-
-    item.movimientos.unshift({
-        id: generarId("MOV"),
-        fecha: fechaActual(),
-        cantidad,
-        motivo,
-        saldo: item.stock
-    });
-
-    guardar(STORAGE.inventario, inventario);
-}
-
-/* =========================================================
-   PANEL DE INVENTARIO
-   ========================================================= */
-
-function crearPanelInventario() {
-    const seccion = document.getElementById("seccion-dotacion");
-
-    if (!seccion) return;
-
-    if (document.getElementById("panelInventario")) return;
-
-    const panel = document.createElement("div");
-
-    panel.id = "panelInventario";
-    panel.className = "panel-tabla";
-
-    panel.innerHTML = `
-        <div class="panel-tabla-header">
-            <div>
-                <span class="etiqueta-seccion">ALMACÉN</span>
-                <h3>Inventario de dotación</h3>
-                <p>Consulta existencias y registra entradas al inventario.</p>
-            </div>
-
-            <button id="btnEntradaInventario" class="btn-principal">
-                + Entrada de inventario
-            </button>
-        </div>
-
-        <div class="resumen-dotacion inventario-resumen">
-            <div>
-                <span>📦</span>
-                <div>
-                    <strong id="totalProductosInventario">0</strong>
-                    <small>Elementos</small>
-                </div>
-            </div>
-
-            <div>
-                <span>🟢</span>
-                <div>
-                    <strong id="totalUnidadesInventario">0</strong>
-                    <small>Unidades disponibles</small>
-                </div>
-            </div>
-
-            <div>
-                <span>⚠️</span>
-                <div>
-                    <strong id="totalBajoInventario">0</strong>
-                    <small>Stock bajo</small>
-                </div>
-            </div>
-        </div>
-
-        <div class="tabla-responsive">
-            <table>
-                <thead>
-                    <tr>
-                        <th>Elemento</th>
-                        <th>Stock actual</th>
-                        <th>Stock mínimo</th>
-                        <th>Estado</th>
-                        <th>Acciones</th>
-                    </tr>
-                </thead>
-
-                <tbody id="tablaInventarioBody"></tbody>
-            </table>
-        </div>
-    `;
-
-    seccion.appendChild(panel);
-
-    document.getElementById("btnEntradaInventario")
-        ?.addEventListener("click", abrirEntradaInventario);
-
-    renderInventario();
-}
-
-function renderInventario() {
-    const body = document.getElementById("tablaInventarioBody");
-
-    if (!body) return;
-
-    body.innerHTML = "";
-
-    inventario.forEach(item => {
-        const stock = Number(item.stock || 0);
-        const minimo = Number(item.minimo || 0);
-
-        let estado = "Disponible";
-        let clase = "entregado";
-
-        if (stock === 0) {
-            estado = "Agotado";
-            clase = "pendiente";
-        } else if (stock <= minimo) {
-            estado = "Stock bajo";
-            clase = "pendiente";
-        }
-
-        const tr = document.createElement("tr");
-
-        tr.innerHTML = `
-            <td>
-                <strong>${escapeHTML(item.elemento)}</strong>
-            </td>
-
-            <td>
-                <strong>${stock}</strong>
-            </td>
-
-            <td>
-                ${minimo}
-            </td>
-
-            <td>
-                <span class="estado ${clase}">
-                    ${estado}
-                </span>
-            </td>
-
-            <td>
-                <button 
-                    class="btn-tabla entrada-inventario"
-                    data-id="${item.id}"
-                    title="Agregar inventario"
-                >
-                    ➕
-                </button>
-
-                <button 
-                    class="btn-tabla ajustar-minimo"
-                    data-id="${item.id}"
-                    title="Cambiar stock mínimo"
-                >
-                    ⚙️
-                </button>
-            </td>
-        `;
-
-        body.appendChild(tr);
-    });
-
-    document.querySelectorAll(".entrada-inventario").forEach(btn => {
-        btn.addEventListener("click", () => {
-            const item = inventario.find(i => i.id === btn.dataset.id);
-
-            if (item) {
-                abrirEntradaInventario(item.elemento);
-            }
-        });
-    });
-
-    document.querySelectorAll(".ajustar-minimo").forEach(btn => {
-        btn.addEventListener("click", () => {
-            cambiarStockMinimo(btn.dataset.id);
-        });
-    });
-
-    const totalProductos = document.getElementById("totalProductosInventario");
-    const totalUnidades = document.getElementById("totalUnidadesInventario");
-    const totalBajo = document.getElementById("totalBajoInventario");
-
-    if (totalProductos) {
-        totalProductos.textContent = inventario.length;
-    }
-
-    if (totalUnidades) {
-        totalUnidades.textContent = inventario.reduce(
-            (total, item) => total + Number(item.stock || 0),
-            0
+    document
+        .getElementById(
+            "formInventario"
+        )
+        ?.addEventListener(
+            "submit",
+            guardarElemento
         );
-    }
-
-    if (totalBajo) {
-        totalBajo.textContent = inventario.filter(
-            item => Number(item.stock || 0) <= Number(item.minimo || 0)
-        ).length;
-    }
 }
 
-function abrirEntradaInventario(elementoSeleccionado = "") {
-    const opciones = inventario
-        .map(item => `
-            <option value="${escapeHTML(item.elemento)}"
-                ${item.elemento === elementoSeleccionado ? "selected" : ""}>
-                ${escapeHTML(item.elemento)}
-            </option>
-        `)
-        .join("");
+async function guardarElemento(
+    e
+) {
 
-    const elemento = prompt(
-        `Selecciona o escribe el elemento:\n\n` +
-        inventario.map(i => `• ${i.elemento}`).join("\n")
-    );
+    e.preventDefault();
 
-    if (!elemento) return;
+    const campoElemento =
+        document.getElementById(
+            "inventarioElemento"
+        ) ||
+        document.getElementById(
+            "inventarioNombre"
+        );
 
-    const item = inventario.find(
-        i => i.elemento.toLowerCase() === elemento.trim().toLowerCase()
-    );
+    const elemento =
+        campoElemento
+            ?.value
+            .trim() || "";
 
-    if (!item) {
-        alert("Ese elemento no existe en el inventario.");
+    const talla =
+        document
+            .getElementById(
+                "inventarioTalla"
+            )
+            ?.value
+            .trim() || null;
+
+    const campoStock =
+        document.getElementById(
+            "inventarioCantidad"
+        );
+
+    const stock =
+        Number(
+            campoStock?.value || 0
+        );
+
+    if (!elemento) {
+
+        alert(
+            "Escribe el nombre del elemento."
+        );
+
         return;
     }
 
-    const cantidad = Number(
-        prompt(`¿Cuántas unidades deseas agregar de "${item.elemento}"?`, "1")
-    );
+    if (
+        stock < 0
+    ) {
 
-    if (!cantidad || cantidad < 1) return;
+        alert(
+            "El stock no puede ser negativo."
+        );
 
-    modificarStock(
-        item.elemento,
-        cantidad,
-        "Entrada de inventario"
+        return;
+    }
+
+    /*
+       Si el HTML antiguo tiene
+       inventarioCategoria,
+       simplemente no la enviamos porque
+       esa columna NO existe en Supabase.
+    */
+
+    const datos = {
+
+        elemento,
+
+        talla,
+
+        stock
+    };
+
+    const {
+        error
+    } =
+        await supabaseClient
+            .from("inventario")
+            .insert(
+                [datos]
+            );
+
+    if (error) {
+
+        console.error(
+            error
+        );
+
+        alert(
+            "Error al guardar el inventario:\n\n" +
+            error.message
+        );
+
+        return;
+    }
+
+    alert(
+        "Elemento guardado correctamente."
     );
 
     agregarHistorial(
-        "Entrada de inventario",
-        `${cantidad} unidades de ${item.elemento}.`
+        "Elemento creado",
+        `${elemento} - stock inicial: ${stock}`
     );
+
+    e.target.reset();
+
+    await cargarDatosSupabase();
+
+    cargarElementosSelect();
 
     renderInventario();
-    actualizarTodo();
+
+    renderNotificaciones();
 }
 
-function cambiarStockMinimo(id) {
-    const item = inventario.find(i => i.id === id);
+function renderInventario() {
 
-    if (!item) return;
+    const body =
+        document.getElementById(
+            "tablaInventarioBody"
+        );
 
-    const nuevoMinimo = Number(
-        prompt(
-            `Stock mínimo para ${item.elemento}:`,
-            item.minimo
-        )
+    if (!body) {
+        return;
+    }
+
+    body.innerHTML = "";
+
+    inventario.forEach(
+        item => {
+
+            const stock =
+                Number(
+                    item.stock || 0
+                );
+
+            let estado =
+                "Disponible";
+
+            let clase =
+                "entregado";
+
+            if (
+                stock === 0
+            ) {
+
+                estado =
+                    "Agotado";
+
+                clase =
+                    "pendiente";
+
+            } else if (
+                stock <=
+                STOCK_MINIMO
+            ) {
+
+                estado =
+                    "Stock bajo";
+
+                clase =
+                    "pendiente";
+            }
+
+            const tr =
+                document.createElement(
+                    "tr"
+                );
+
+            tr.innerHTML = `
+                <td>
+                    <strong>
+                        ${escapeHTML(
+                            item.elemento || ""
+                        )}
+                    </strong>
+
+                    ${
+                        item.talla
+                            ? `
+                                <small>
+                                    ${escapeHTML(
+                                        item.talla
+                                    )}
+                                </small>
+                              `
+                            : ""
+                    }
+                </td>
+
+                <td>
+                    <strong>
+                        ${stock}
+                    </strong>
+                </td>
+
+                <td>
+                    ${STOCK_MINIMO}
+                </td>
+
+                <td>
+                    <span
+                        class="estado ${clase}"
+                    >
+                        ${estado}
+                    </span>
+                </td>
+
+                <td>
+
+                    <button
+                        type="button"
+                        class="btn-tabla btn-entrada-stock"
+                        data-id="${item.id}"
+                        title="Agregar stock"
+                    >
+                        ➕
+                    </button>
+
+                </td>
+            `;
+
+            body.appendChild(
+                tr
+            );
+        }
     );
 
-    if (isNaN(nuevoMinimo) || nuevoMinimo < 0) return;
+    body
+        .querySelectorAll(
+            ".btn-entrada-stock"
+        )
+        .forEach(
+            boton => {
 
-    item.minimo = nuevoMinimo;
+                boton.addEventListener(
+                    "click",
+                    () => {
 
-    guardar(STORAGE.inventario, inventario);
+                        abrirEntradaInventario(
+                            boton.dataset.id
+                        );
+                    }
+                );
+            }
+        );
+
+    const totalProductos =
+        document.getElementById(
+            "totalProductosInventario"
+        );
+
+    const totalUnidades =
+        document.getElementById(
+            "totalUnidadesInventario"
+        );
+
+    const totalBajo =
+        document.getElementById(
+            "totalBajoInventario"
+        );
+
+    if (totalProductos) {
+
+        totalProductos.textContent =
+            inventario.length;
+    }
+
+    if (totalUnidades) {
+
+        totalUnidades.textContent =
+            inventario.reduce(
+                (
+                    total,
+                    item
+                ) =>
+                    total +
+                    Number(
+                        item.stock || 0
+                    ),
+                0
+            );
+    }
+
+    if (totalBajo) {
+
+        totalBajo.textContent =
+            inventario.filter(
+                item =>
+                    Number(
+                        item.stock || 0
+                    ) <=
+                    STOCK_MINIMO
+            ).length;
+    }
+}
+
+async function modificarStock(
+    id,
+    cantidad,
+    motivo =
+        "Movimiento de inventario"
+) {
+
+    const item =
+        inventario.find(
+            registro =>
+                Number(
+                    registro.id
+                ) ===
+                Number(id)
+        );
+
+    if (!item) {
+
+        alert(
+            "No se encontró el elemento de inventario."
+        );
+
+        return false;
+    }
+
+    const stockActual =
+        Number(
+            item.stock || 0
+        );
+
+    const nuevoStock =
+        Math.max(
+            0,
+            stockActual +
+            Number(cantidad)
+        );
+
+    const {
+        error
+    } =
+        await supabaseClient
+            .from("inventario")
+            .update({
+                stock:
+                    nuevoStock
+            })
+            .eq(
+                "id",
+                item.id
+            );
+
+    if (error) {
+
+        console.error(
+            error
+        );
+
+        alert(
+            "Error actualizando stock:\n\n" +
+            error.message
+        );
+
+        return false;
+    }
+
+    agregarHistorial(
+        motivo,
+        `${item.elemento}: ${cantidad > 0 ? "+" : ""}${cantidad} unidades. Nuevo stock: ${nuevoStock}`
+    );
+
+    await cargarDatosSupabase();
+
+    cargarElementosSelect();
+
+    renderInventario();
+
+    renderNotificaciones();
+
+    return true;
+}
+
+async function abrirEntradaInventario(
+    id = null
+) {
+
+    let item = null;
+
+    if (
+        id !== null &&
+        id !== ""
+    ) {
+
+        item =
+            inventario.find(
+                registro =>
+                    Number(
+                        registro.id
+                    ) ===
+                    Number(id)
+            );
+    }
+
+    if (!item) {
+
+        const nombres =
+            inventario
+                .map(
+                    registro =>
+                        `• ${registro.elemento}${
+                            registro.talla
+                                ? ` - ${registro.talla}`
+                                : ""
+                        }`
+                )
+                .join("\n");
+
+        const texto =
+            prompt(
+                `Escribe exactamente el elemento:\n\n${nombres}`
+            );
+
+        if (!texto) {
+            return;
+        }
+
+        item =
+            inventario.find(
+                registro =>
+                    String(
+                        registro.elemento ||
+                        ""
+                    )
+                        .trim()
+                        .toLowerCase() ===
+                    texto
+                        .trim()
+                        .toLowerCase()
+            );
+    }
+
+    if (!item) {
+
+        alert(
+            "Ese elemento no existe en el inventario."
+        );
+
+        return;
+    }
+
+    const cantidad =
+        Number(
+            prompt(
+                `¿Cuántas unidades deseas agregar de "${item.elemento}"?`,
+                "1"
+            )
+        );
+
+    if (
+        !Number.isFinite(
+            cantidad
+        ) ||
+        cantidad < 1
+    ) {
+        return;
+    }
+
+    await modificarStock(
+        item.id,
+        cantidad,
+        "Entrada de inventario"
+    );
+}
+
+function crearPanelInventario() {
+
+    const seccion =
+        document.getElementById(
+            "seccion-dotacion"
+        );
+
+    if (!seccion) {
+        return;
+    }
+
+    if (
+        document.getElementById(
+            "panelInventario"
+        )
+    ) {
+        return;
+    }
+
+    const panel =
+        document.createElement(
+            "div"
+        );
+
+    panel.id =
+        "panelInventario";
+
+    panel.className =
+        "panel-tabla";
+
+    panel.innerHTML = `
+        <div
+            class="panel-tabla-header"
+        >
+
+            <div>
+
+                <span
+                    class="etiqueta-seccion"
+                >
+                    ALMACÉN
+                </span>
+
+                <h3>
+                    Inventario de dotación
+                </h3>
+
+                <p>
+                    Consulta existencias y
+                    registra entradas.
+                </p>
+
+            </div>
+
+            <button
+                id="btnEntradaInventario"
+                class="btn-principal"
+                type="button"
+            >
+                + Entrada de inventario
+            </button>
+
+        </div>
+
+        <div
+            class="resumen-dotacion inventario-resumen"
+        >
+
+            <div>
+
+                <span>
+                    📦
+                </span>
+
+                <div>
+
+                    <strong
+                        id="totalProductosInventario"
+                    >
+                        0
+                    </strong>
+
+                    <small>
+                        Elementos
+                    </small>
+
+                </div>
+
+            </div>
+
+            <div>
+
+                <span>
+                    🟢
+                </span>
+
+                <div>
+
+                    <strong
+                        id="totalUnidadesInventario"
+                    >
+                        0
+                    </strong>
+
+                    <small>
+                        Unidades disponibles
+                    </small>
+
+                </div>
+
+            </div>
+
+            <div>
+
+                <span>
+                    ⚠️
+                </span>
+
+                <div>
+
+                    <strong
+                        id="totalBajoInventario"
+                    >
+                        0
+                    </strong>
+
+                    <small>
+                        Stock bajo
+                    </small>
+
+                </div>
+
+            </div>
+
+        </div>
+
+        <div
+            class="tabla-responsive"
+        >
+
+            <table>
+
+                <thead>
+
+                    <tr>
+
+                        <th>
+                            Elemento
+                        </th>
+
+                        <th>
+                            Stock actual
+                        </th>
+
+                        <th>
+                            Stock mínimo
+                        </th>
+
+                        <th>
+                            Estado
+                        </th>
+
+                        <th>
+                            Acciones
+                        </th>
+
+                    </tr>
+
+                </thead>
+
+                <tbody
+                    id="tablaInventarioBody"
+                ></tbody>
+
+            </table>
+
+        </div>
+    `;
+
+    seccion.appendChild(
+        panel
+    );
+
+    document
+        .getElementById(
+            "btnEntradaInventario"
+        )
+        ?.addEventListener(
+            "click",
+            () => {
+                abrirEntradaInventario();
+            }
+        );
 
     renderInventario();
 }
 
 /* =========================================================
-   RESUMEN DOTACIÓN
+   DOTACIÓN
    ========================================================= */
 
+function renderDotacion() {
+
+    renderEntregas();
+
+    actualizarResumenDotacion();
+}
+
 function actualizarResumenDotacion() {
-    const total = document.getElementById("resumenTotalDotacion");
-    const entregadas = document.getElementById("resumenEntregadas");
-    const pendientes = document.getElementById("resumenPendientes");
+
+    const total =
+        document.getElementById(
+            "resumenTotalDotacion"
+        );
+
+    const entregadas =
+        document.getElementById(
+            "resumenEntregadas"
+        );
+
+    const pendientes =
+        document.getElementById(
+            "resumenPendientes"
+        );
+
+    const totalEntregas =
+        document.getElementById(
+            "totalEntregas"
+        );
+
+    const totalPendientes =
+        document.getElementById(
+            "totalPendientes"
+        );
+
+    const totalMes =
+        document.getElementById(
+            "totalMes"
+        );
+
+    const cantidadEntregas =
+        entregas.length;
+
+    /*
+       Tu tabla actual no tiene columna estado.
+       Por tanto todas las filas guardadas
+       representan entregas registradas.
+    */
 
     if (total) {
-        total.textContent = entregas.length;
+
+        total.textContent =
+            cantidadEntregas;
     }
 
     if (entregadas) {
+
         entregadas.textContent =
-            entregas.filter(e => e.estado === "Entregado").length;
+            cantidadEntregas;
     }
 
     if (pendientes) {
-        pendientes.textContent =
-            entregas.filter(e => e.estado === "Pendiente").length;
-    }
 
-    const totalEntregas = document.getElementById("totalEntregas");
+        pendientes.textContent =
+            "0";
+    }
 
     if (totalEntregas) {
-        totalEntregas.textContent = entregas.length;
-    }
 
-    const totalPendientes = document.getElementById("totalPendientes");
+        totalEntregas.textContent =
+            cantidadEntregas;
+    }
 
     if (totalPendientes) {
+
         totalPendientes.textContent =
-            entregas.filter(e => e.estado === "Pendiente").length;
+            "0";
     }
 
-    const mesActual = new Date().toISOString().substring(0, 7);
-
-    const totalMes = document.getElementById("totalMes");
+    const mesActual =
+        new Date()
+            .toISOString()
+            .substring(
+                0,
+                7
+            );
 
     if (totalMes) {
+
         totalMes.textContent =
-            entregas.filter(e => e.fecha?.startsWith(mesActual)).length;
+            entregas.filter(
+                entrega =>
+                    String(
+                        entrega.fecha ||
+                        ""
+                    ).startsWith(
+                        mesActual
+                    )
+            ).length;
     }
 }
 
@@ -1062,161 +3226,410 @@ function actualizarResumenDotacion() {
    ========================================================= */
 
 function renderHistorial() {
-    const body = document.getElementById("tablaHistorialBody");
 
-    if (!body) return;
+    const body =
+        document.getElementById(
+            "tablaHistorialBody"
+        );
+
+    if (!body) {
+        return;
+    }
 
     body.innerHTML = "";
 
-    historial.forEach(item => {
-        const tr = document.createElement("tr");
+    historial.forEach(
+        item => {
 
-        tr.innerHTML = `
-            <td>${formatearFecha(item.fecha)}</td>
-            <td>
-                <strong>${escapeHTML(item.accion)}</strong>
-            </td>
-            <td>${escapeHTML(item.detalle)}</td>
-        `;
+            const tr =
+                document.createElement(
+                    "tr"
+                );
 
-        body.appendChild(tr);
-    });
+            tr.innerHTML = `
+                <td>
+                    ${formatearFecha(
+                        item.fecha
+                    )}
+                </td>
+
+                <td>
+                    <strong>
+                        ${escapeHTML(
+                            item.accion
+                        )}
+                    </strong>
+                </td>
+
+                <td>
+                    ${escapeHTML(
+                        item.detalle
+                    )}
+                </td>
+            `;
+
+            body.appendChild(
+                tr
+            );
+        }
+    );
 }
 
 /* =========================================================
    REPORTES
    ========================================================= */
 
-function obtenerEntregasFiltradas() {
-    const texto = (
-        document.getElementById("reporteBuscar")?.value || ""
-    ).toLowerCase();
+function prepararEntregaReporte(
+    entrega
+) {
 
-    const estado =
-        document.getElementById("reporteEstado")?.value || "";
+    const empleado =
+        obtenerEmpleado(
+            entrega.empleado
+        );
+
+    const inventarioItem =
+        obtenerRegistroInventario(
+            entrega.elemento
+        );
+
+    return {
+
+        ...entrega,
+
+        empleadoId:
+            entrega.empleado,
+
+        empleadoNombre:
+            empleado?.nombre ||
+            "Empleado no encontrado",
+
+        codigo:
+            empleado?.cedula ||
+            "",
+
+        cantidad:
+            Number(
+                entrega.cantidades ||
+                0
+            ),
+
+        talla:
+            inventarioItem?.talla ||
+            "",
+
+        centroCosto:
+            "",
+
+        estado:
+            "Entregado",
+
+        observaciones:
+            entrega.comentarios ||
+            ""
+    };
+}
+
+function obtenerEntregasFiltradas() {
+
+    const texto =
+        (
+            document
+                .getElementById(
+                    "reporteBuscar"
+                )
+                ?.value || ""
+        )
+            .trim()
+            .toLowerCase();
 
     const desde =
-        document.getElementById("reporteFechaInicio")?.value || "";
+        document
+            .getElementById(
+                "reporteFechaInicio"
+            )
+            ?.value || "";
 
     const hasta =
-        document.getElementById("reporteFechaFin")?.value || "";
+        document
+            .getElementById(
+                "reporteFechaFin"
+            )
+            ?.value || "";
 
-    return entregas.filter(e => {
-        const coincideTexto =
-            `${e.empleadoNombre} ${e.elemento} ${e.centroCosto} ${e.talla}`
-                .toLowerCase()
-                .includes(texto);
+    return entregas
 
-        const coincideEstado =
-            !estado || e.estado === estado;
+        .map(
+            prepararEntregaReporte
+        )
 
-        const coincideDesde =
-            !desde || e.fecha >= desde;
+        .filter(
+            entrega => {
 
-        const coincideHasta =
-            !hasta || e.fecha <= hasta;
+                const fecha =
+                    String(
+                        entrega.fecha ||
+                        ""
+                    ).substring(
+                        0,
+                        10
+                    );
 
-        return (
-            coincideTexto &&
-            coincideEstado &&
-            coincideDesde &&
-            coincideHasta
+                const coincideTexto =
+                    `
+                        ${entrega.empleadoNombre}
+                        ${entrega.codigo}
+                        ${entrega.elemento}
+                        ${entrega.talla}
+                        ${entrega.observaciones}
+                    `
+                        .toLowerCase()
+                        .includes(
+                            texto
+                        );
+
+                const coincideDesde =
+                    !desde ||
+                    fecha >=
+                    desde;
+
+                const coincideHasta =
+                    !hasta ||
+                    fecha <=
+                    hasta;
+
+                return (
+                    coincideTexto &&
+                    coincideDesde &&
+                    coincideHasta
+                );
+            }
         );
-    });
 }
 
 function renderReportes() {
-    const body = document.getElementById("tablaReporteBody");
 
-    if (!body) return;
+    const body =
+        document.getElementById(
+            "tablaReporteBody"
+        );
 
-    const datos = obtenerEntregasFiltradas();
+    if (!body) {
+        return;
+    }
+
+    const datos =
+        obtenerEntregasFiltradas();
 
     body.innerHTML = "";
 
-    datos.forEach(e => {
-        const empleado = obtenerEmpleado(e.empleadoId);
+    datos.forEach(
+        entrega => {
 
-        const tr = document.createElement("tr");
+            const tr =
+                document.createElement(
+                    "tr"
+                );
 
-        tr.innerHTML = `
-            <td>${formatearFecha(e.fecha)}</td>
-            <td>${escapeHTML(e.empleadoNombre)}</td>
-            <td>${escapeHTML(empleado?.codigo || "-")}</td>
-            <td>${escapeHTML(e.elemento)}</td>
-            <td>${escapeHTML(e.talla || "-")}</td>
-            <td>${e.cantidad}</td>
-            <td>${escapeHTML(e.centroCosto)}</td>
-            <td>${escapeHTML(e.estado)}</td>
-            <td>
-                ${e.evidencia
-                    ? `<a href="${e.evidencia}" target="_blank">📷 Ver</a>`
-                    : "-"
-                }
-            </td>
-        `;
+            tr.innerHTML = `
+                <td>
+                    ${formatearFecha(
+                        entrega.fecha
+                    )}
+                </td>
 
-        body.appendChild(tr);
-    });
+                <td>
+                    ${escapeHTML(
+                        entrega.empleadoNombre
+                    )}
+                </td>
 
-    const total = document.getElementById("reporteTotalEntregas");
-    const entregadas = document.getElementById("reporteEntregadas");
-    const pendientes = document.getElementById("reportePendientes");
-    const totalEmpleados = document.getElementById("reporteEmpleados");
+                <td>
+                    ${escapeHTML(
+                        entrega.codigo ||
+                        "-"
+                    )}
+                </td>
 
-    if (total) total.textContent = datos.length;
+                <td>
+                    ${escapeHTML(
+                        entrega.elemento ||
+                        ""
+                    )}
+                </td>
+
+                <td>
+                    ${escapeHTML(
+                        entrega.talla ||
+                        "-"
+                    )}
+                </td>
+
+                <td>
+                    ${
+                        entrega.cantidad
+                    }
+                </td>
+
+                <td>
+                    ${
+                        escapeHTML(
+                            entrega.centroCosto ||
+                            "-"
+                        )
+                    }
+                </td>
+
+                <td>
+                    Entregado
+                </td>
+
+                <td>
+                    ${escapeHTML(
+                        entrega.observaciones ||
+                        "-"
+                    )}
+                </td>
+            `;
+
+            body.appendChild(
+                tr
+            );
+        }
+    );
+
+    const total =
+        document.getElementById(
+            "reporteTotalEntregas"
+        );
+
+    const entregadas =
+        document.getElementById(
+            "reporteEntregadas"
+        );
+
+    const pendientes =
+        document.getElementById(
+            "reportePendientes"
+        );
+
+    const totalEmpleados =
+        document.getElementById(
+            "reporteEmpleados"
+        );
+
+    if (total) {
+
+        total.textContent =
+            datos.length;
+    }
 
     if (entregadas) {
+
         entregadas.textContent =
-            datos.filter(e => e.estado === "Entregado").length;
+            datos.length;
     }
 
     if (pendientes) {
+
         pendientes.textContent =
-            datos.filter(e => e.estado === "Pendiente").length;
+            "0";
     }
 
     if (totalEmpleados) {
+
         totalEmpleados.textContent =
-            new Set(datos.map(e => e.empleadoId)).size;
+            new Set(
+                datos.map(
+                    entrega =>
+                        entrega.empleadoId
+                )
+            ).size;
     }
 }
 
 function iniciarReportes() {
-    document.getElementById("actualizarReporte")
-        ?.addEventListener("click", renderReportes);
 
-    document.getElementById("limpiarReporte")
-        ?.addEventListener("click", () => {
-            document.getElementById("reporteBuscar").value = "";
-            document.getElementById("reporteEstado").value = "";
-            document.getElementById("reporteFechaInicio").value = "";
-            document.getElementById("reporteFechaFin").value = "";
+    document
+        .getElementById(
+            "actualizarReporte"
+        )
+        ?.addEventListener(
+            "click",
+            renderReportes
+        );
 
-            renderReportes();
-        });
+    document
+        .getElementById(
+            "limpiarReporte"
+        )
+        ?.addEventListener(
+            "click",
+            () => {
 
-    document.getElementById("descargarReporte")
-        ?.addEventListener("click", descargarCSV);
+                [
+                    "reporteBuscar",
+                    "reporteEstado",
+                    "reporteFechaInicio",
+                    "reporteFechaFin"
+                ].forEach(
+                    id => {
 
-    document.getElementById("imprimirReporte")
-        ?.addEventListener("click", () => {
-            window.print();
-        });
+                        const elemento =
+                            document.getElementById(
+                                id
+                            );
+
+                        if (elemento) {
+                            elemento.value =
+                                "";
+                        }
+                    }
+                );
+
+                renderReportes();
+            }
+        );
+
+    document
+        .getElementById(
+            "descargarReporte"
+        )
+        ?.addEventListener(
+            "click",
+            descargarCSV
+        );
+
+    document
+        .getElementById(
+            "imprimirReporte"
+        )
+        ?.addEventListener(
+            "click",
+            () => {
+                window.print();
+            }
+        );
 }
 
 function descargarCSV() {
-    const datos = obtenerEntregasFiltradas();
+
+    const datos =
+        obtenerEntregasFiltradas();
 
     if (!datos.length) {
-        alert("No hay datos para descargar.");
+
+        alert(
+            "No hay datos para descargar."
+        );
+
         return;
     }
 
     const encabezados = [
         "Fecha",
         "Empleado",
-        "Código",
+        "Cédula",
         "Elemento",
         "Talla",
         "Cantidad",
@@ -1225,50 +3638,93 @@ function descargarCSV() {
         "Observaciones"
     ];
 
-    const filas = datos.map(e => {
-        const empleado = obtenerEmpleado(e.empleadoId);
+    const filas =
+        datos.map(
+            entrega => [
 
-        return [
-            e.fecha,
-            e.empleadoNombre,
-            empleado?.codigo || "",
-            e.elemento,
-            e.talla || "",
-            e.cantidad,
-            e.centroCosto,
-            e.estado,
-            e.observaciones || ""
-        ];
-    });
+                formatearFecha(
+                    entrega.fecha
+                ),
 
-    const csv = [
-        encabezados,
-        ...filas
-    ]
-        .map(fila =>
-            fila.map(valor =>
-                `"${String(valor).replace(/"/g, '""')}"`
-            ).join(",")
-        )
-        .join("\n");
+                entrega.empleadoNombre,
 
-    const blob = new Blob(
-        ["\ufeff" + csv],
-        { type: "text/csv;charset=utf-8;" }
+                entrega.codigo,
+
+                entrega.elemento,
+
+                entrega.talla,
+
+                entrega.cantidad,
+
+                entrega.centroCosto,
+
+                "Entregado",
+
+                entrega.observaciones
+            ]
+        );
+
+    const csv =
+        [
+            encabezados,
+            ...filas
+        ]
+            .map(
+                fila =>
+                    fila
+                        .map(
+                            valor =>
+                                `"${String(
+                                    valor ??
+                                    ""
+                                ).replace(
+                                    /"/g,
+                                    '""'
+                                )}"`
+                        )
+                        .join(",")
+            )
+            .join("\n");
+
+    const blob =
+        new Blob(
+            [
+                "\ufeff" +
+                csv
+            ],
+            {
+                type:
+                    "text/csv;charset=utf-8;"
+            }
+        );
+
+    const url =
+        URL.createObjectURL(
+            blob
+        );
+
+    const enlace =
+        document.createElement(
+            "a"
+        );
+
+    enlace.href =
+        url;
+
+    enlace.download =
+        `reporte-dotacion-${fechaActual()}.csv`;
+
+    document.body.appendChild(
+        enlace
     );
 
-    const url = URL.createObjectURL(blob);
-
-    const enlace = document.createElement("a");
-
-    enlace.href = url;
-    enlace.download = `reporte-dotacion-${fechaActual()}.csv`;
-
-    document.body.appendChild(enlace);
     enlace.click();
+
     enlace.remove();
 
-    URL.revokeObjectURL(url);
+    URL.revokeObjectURL(
+        url
+    );
 }
 
 /* =========================================================
@@ -1276,81 +3732,250 @@ function descargarCSV() {
    ========================================================= */
 
 function iniciarBusquedaGlobal() {
-    const input = document.getElementById("buscarGlobal");
-    const resultados = document.getElementById("resultadosBusquedaRapida");
-    const boton = document.getElementById("btnBuscarGlobal");
+
+    const input =
+        document.getElementById(
+            "buscarGlobal"
+        );
+
+    const resultados =
+        document.getElementById(
+            "resultadosBusquedaRapida"
+        );
+
+    const boton =
+        document.getElementById(
+            "btnBuscarGlobal"
+        );
 
     function buscar() {
-        const texto = input.value.trim().toLowerCase();
 
-        if (!texto) {
-            resultados.classList.add("oculto");
-            resultados.innerHTML = "";
+        if (
+            !input ||
+            !resultados
+        ) {
             return;
         }
 
-        const empleadosEncontrados = empleados.filter(e =>
-            `${e.nombre} ${e.codigo} ${e.documento}`
-                .toLowerCase()
-                .includes(texto)
-        );
+        const texto =
+            input.value
+                .trim()
+                .toLowerCase();
 
-        const entregasEncontradas = entregas.filter(e =>
-            `${e.empleadoNombre} ${e.elemento} ${e.centroCosto}`
-                .toLowerCase()
-                .includes(texto)
-        );
+        if (!texto) {
 
-        const inventarioEncontrado = inventario.filter(i =>
-            i.elemento.toLowerCase().includes(texto)
-        );
+            resultados.classList.add(
+                "oculto"
+            );
+
+            resultados.innerHTML =
+                "";
+
+            return;
+        }
+
+        const empleadosEncontrados =
+            empleados.filter(
+                empleado =>
+                    `
+                        ${empleado.nombre || ""}
+                        ${empleado.cedula || ""}
+                        ${empleado.cargo || ""}
+                    `
+                        .toLowerCase()
+                        .includes(
+                            texto
+                        )
+            );
+
+        const entregasEncontradas =
+            entregas
+                .map(
+                    prepararEntregaReporte
+                )
+                .filter(
+                    entrega =>
+                        `
+                            ${entrega.empleadoNombre}
+                            ${entrega.elemento}
+                            ${entrega.codigo}
+                        `
+                            .toLowerCase()
+                            .includes(
+                                texto
+                            )
+                );
+
+        const inventarioEncontrado =
+            inventario.filter(
+                item =>
+                    String(
+                        item.elemento ||
+                        ""
+                    )
+                        .toLowerCase()
+                        .includes(
+                            texto
+                        )
+            );
 
         let html = "";
 
-        empleadosEncontrados.slice(0, 5).forEach(e => {
-            html += `
-                <div class="resultado-busqueda" data-seccion="seccion-empleados">
-                    👤 <strong>${escapeHTML(e.nombre)}</strong>
-                    <small>${escapeHTML(e.codigo)}</small>
-                </div>
-            `;
-        });
+        empleadosEncontrados
+            .slice(
+                0,
+                5
+            )
+            .forEach(
+                empleado => {
 
-        entregasEncontradas.slice(0, 5).forEach(e => {
-            html += `
-                <div class="resultado-busqueda" data-seccion="seccion-dotacion">
-                    📦 <strong>${escapeHTML(e.elemento)}</strong>
-                    <small>${escapeHTML(e.empleadoNombre)}</small>
-                </div>
-            `;
-        });
+                    html += `
+                        <div
+                            class="resultado-busqueda"
+                            data-seccion="seccion-empleados"
+                        >
 
-        inventarioEncontrado.slice(0, 5).forEach(i => {
-            html += `
-                <div class="resultado-busqueda" data-seccion="seccion-dotacion">
-                    📋 <strong>${escapeHTML(i.elemento)}</strong>
-                    <small>Stock: ${i.stock}</small>
-                </div>
-            `;
-        });
+                            👤
+
+                            <strong>
+                                ${escapeHTML(
+                                    empleado.nombre
+                                )}
+                            </strong>
+
+                            <small>
+                                ${escapeHTML(
+                                    empleado.cedula ||
+                                    ""
+                                )}
+                            </small>
+
+                        </div>
+                    `;
+                }
+            );
+
+        entregasEncontradas
+            .slice(
+                0,
+                5
+            )
+            .forEach(
+                entrega => {
+
+                    html += `
+                        <div
+                            class="resultado-busqueda"
+                            data-seccion="seccion-dotacion"
+                        >
+
+                            📦
+
+                            <strong>
+                                ${escapeHTML(
+                                    entrega.elemento
+                                )}
+                            </strong>
+
+                            <small>
+                                ${escapeHTML(
+                                    entrega.empleadoNombre
+                                )}
+                            </small>
+
+                        </div>
+                    `;
+                }
+            );
+
+        inventarioEncontrado
+            .slice(
+                0,
+                5
+            )
+            .forEach(
+                item => {
+
+                    html += `
+                        <div
+                            class="resultado-busqueda"
+                            data-seccion="seccion-dotacion"
+                        >
+
+                            📋
+
+                            <strong>
+                                ${escapeHTML(
+                                    item.elemento
+                                )}
+                            </strong>
+
+                            <small>
+                                Stock:
+                                ${
+                                    Number(
+                                        item.stock ||
+                                        0
+                                    )
+                                }
+                            </small>
+
+                        </div>
+                    `;
+                }
+            );
 
         if (!html) {
-            html = `<div class="resultado-busqueda">Sin resultados.</div>`;
+
+            html = `
+                <div
+                    class="resultado-busqueda"
+                >
+                    Sin resultados.
+                </div>
+            `;
         }
 
-        resultados.innerHTML = html;
-        resultados.classList.remove("oculto");
+        resultados.innerHTML =
+            html;
 
-        resultados.querySelectorAll("[data-seccion]").forEach(item => {
-            item.addEventListener("click", () => {
-                mostrarSeccion(item.dataset.seccion);
-                resultados.classList.add("oculto");
-            });
-        });
+        resultados.classList.remove(
+            "oculto"
+        );
+
+        resultados
+            .querySelectorAll(
+                "[data-seccion]"
+            )
+            .forEach(
+                elemento => {
+
+                    elemento.addEventListener(
+                        "click",
+                        () => {
+
+                            mostrarSeccion(
+                                elemento.dataset.seccion
+                            );
+
+                            resultados.classList.add(
+                                "oculto"
+                            );
+                        }
+                    );
+                }
+            );
     }
 
-    input?.addEventListener("input", buscar);
-    boton?.addEventListener("click", buscar);
+    input?.addEventListener(
+        "input",
+        buscar
+    );
+
+    boton?.addEventListener(
+        "click",
+        buscar
+    );
 }
 
 /* =========================================================
@@ -1358,215 +3983,475 @@ function iniciarBusquedaGlobal() {
    ========================================================= */
 
 function iniciarNotificaciones() {
-    const boton = document.getElementById("notificacionesBtn");
-    const panel = document.getElementById("panelNotificaciones");
-    const cerrar = document.getElementById("cerrarNotificaciones");
 
-    boton?.addEventListener("click", () => {
-        panel.classList.toggle("oculto");
-        renderNotificaciones();
-    });
+    const boton =
+        document.getElementById(
+            "notificacionesBtn"
+        );
 
-    cerrar?.addEventListener("click", () => {
-        panel.classList.add("oculto");
-    });
+    const panel =
+        document.getElementById(
+            "panelNotificaciones"
+        );
 
-    renderNotificaciones();
+    const cerrar =
+        document.getElementById(
+            "cerrarNotificaciones"
+        );
+
+    boton?.addEventListener(
+        "click",
+        () => {
+
+            panel?.classList.toggle(
+                "oculto"
+            );
+
+            renderNotificaciones();
+        }
+    );
+
+    cerrar?.addEventListener(
+        "click",
+        () => {
+
+            panel?.classList.add(
+                "oculto"
+            );
+        }
+    );
 }
 
 function renderNotificaciones() {
-    const contenido = document.getElementById("contenidoNotificaciones");
-    const contador = document.getElementById("contadorNotificaciones");
 
-    if (!contenido) return;
+    const contenido =
+        document.getElementById(
+            "contenidoNotificaciones"
+        );
 
-    const bajo = inventario.filter(
-        item => Number(item.stock || 0) <= Number(item.minimo || 0)
-    );
+    const contador =
+        document.getElementById(
+            "contadorNotificaciones"
+        );
 
-    const pendientes = entregas.filter(
-        e => e.estado === "Pendiente"
-    );
+    if (!contenido) {
+        return;
+    }
 
-    const total = bajo.length + pendientes.length;
+    const bajo =
+        inventario.filter(
+            item =>
+                Number(
+                    item.stock || 0
+                ) <=
+                STOCK_MINIMO
+        );
+
+    const total =
+        bajo.length;
 
     if (contador) {
-        contador.textContent = total;
+
+        contador.textContent =
+            total;
     }
 
     if (!total) {
+
         contenido.innerHTML = `
-            <div class="notificacion-vacia">
+            <div
+                class="notificacion-vacia"
+            >
                 No hay notificaciones.
             </div>
         `;
+
         return;
     }
 
     let html = "";
 
-    bajo.forEach(item => {
-        html += `
-            <div class="notificacion-item">
-                ⚠️
-                <div>
-                    <strong>Stock bajo</strong>
-                    <p>${escapeHTML(item.elemento)}: ${item.stock} unidades.</p>
-                </div>
-            </div>
-        `;
-    });
+    bajo.forEach(
+        item => {
 
-    pendientes.forEach(e => {
-        html += `
-            <div class="notificacion-item">
-                🟡
-                <div>
-                    <strong>Entrega pendiente</strong>
-                    <p>${escapeHTML(e.empleadoNombre)} - ${escapeHTML(e.elemento)}</p>
-                </div>
-            </div>
-        `;
-    });
+            html += `
+                <div
+                    class="notificacion-item"
+                >
 
-    contenido.innerHTML = html;
+                    ⚠️
+
+                    <div>
+
+                        <strong>
+                            Stock bajo
+                        </strong>
+
+                        <p>
+                            ${escapeHTML(
+                                item.elemento
+                            )}:
+                            ${
+                                Number(
+                                    item.stock ||
+                                    0
+                                )
+                            }
+                            unidades.
+                        </p>
+
+                    </div>
+
+                </div>
+            `;
+        }
+    );
+
+    contenido.innerHTML =
+        html;
 }
 
 /* =========================================================
    DASHBOARD
    ========================================================= */
 
-function cargarDashboard() {
+async function cargarDashboard() {
+
+    const cargado =
+        await cargarDatosSupabase();
+
+    if (!cargado) {
+        return;
+    }
+
     renderEmpleados();
+
     renderDotacion();
+
+    renderInventario();
+
     renderHistorial();
+
     renderReportes();
+
     renderNotificaciones();
+
     actualizarResumenDotacion();
-    actualizarTodo();
+
+    cargarEmpleadosSelect();
+
+    cargarElementosSelect();
+
+    actualizarGraficas();
 }
 
-function actualizarTodo() {
+async function actualizarTodo() {
+
+    await cargarDatosSupabase();
+
     renderEmpleados();
+
     renderDotacion();
+
     renderInventario();
+
     renderHistorial();
+
     renderReportes();
+
     renderNotificaciones();
+
     actualizarResumenDotacion();
+
     cargarEmpleadosSelect();
+
+    cargarElementosSelect();
+
     actualizarGraficas();
 }
 
 /* =========================================================
-   GRÁFICAS
+   GRÁFICA
    ========================================================= */
 
 function actualizarGraficas() {
-    const canvasMes = document.getElementById("graficoEntregasMes");
 
-    if (canvasMes) {
-        const ctx = canvasMes.getContext("2d");
-
-        const meses = [];
-
-        for (let i = 5; i >= 0; i--) {
-            const fecha = new Date();
-
-            fecha.setMonth(fecha.getMonth() - i);
-
-            const mes = String(fecha.getMonth() + 1).padStart(2, "0");
-            const año = fecha.getFullYear();
-
-            meses.push(`${año}-${mes}`);
-        }
-
-        const valores = meses.map(mes =>
-            entregas.filter(e => e.fecha?.startsWith(mes)).length
+    const canvas =
+        document.getElementById(
+            "graficoEntregasMes"
         );
 
-        ctx.clearRect(
-            0,
-            0,
-            canvasMes.width,
-            canvasMes.height
-        );
-
-        const ancho = canvasMes.width;
-        const alto = canvasMes.height;
-
-        const max = Math.max(...valores, 1);
-
-        ctx.strokeStyle = "#2563eb";
-        ctx.lineWidth = 3;
-
-        ctx.beginPath();
-
-        valores.forEach((valor, index) => {
-            const x =
-                30 +
-                index *
-                ((ancho - 60) / Math.max(valores.length - 1, 1));
-
-            const y =
-                alto -
-                30 -
-                (valor / max) * (alto - 60);
-
-            if (index === 0) {
-                ctx.moveTo(x, y);
-            } else {
-                ctx.lineTo(x, y);
-            }
-
-            ctx.fillStyle = "#2563eb";
-            ctx.beginPath();
-            ctx.arc(x, y, 5, 0, Math.PI * 2);
-            ctx.fill();
-
-            ctx.beginPath();
-        });
-
-        ctx.stroke();
+    if (!canvas) {
+        return;
     }
+
+    const ctx =
+        canvas.getContext(
+            "2d"
+        );
+
+    if (!ctx) {
+        return;
+    }
+
+    const meses = [];
+
+    for (
+        let i = 5;
+        i >= 0;
+        i--
+    ) {
+
+        const fecha =
+            new Date();
+
+        fecha.setMonth(
+            fecha.getMonth() -
+            i
+        );
+
+        const mes =
+            String(
+                fecha.getMonth() + 1
+            ).padStart(
+                2,
+                "0"
+            );
+
+        const año =
+            fecha.getFullYear();
+
+        meses.push(
+            `${año}-${mes}`
+        );
+    }
+
+    const valores =
+        meses.map(
+            mes =>
+                entregas.filter(
+                    entrega =>
+                        String(
+                            entrega.fecha ||
+                            ""
+                        ).startsWith(
+                            mes
+                        )
+                ).length
+        );
+
+    ctx.clearRect(
+        0,
+        0,
+        canvas.width,
+        canvas.height
+    );
+
+    const ancho =
+        canvas.width;
+
+    const alto =
+        canvas.height;
+
+    const max =
+        Math.max(
+            ...valores,
+            1
+        );
+
+    const puntos =
+        valores.map(
+            (
+                valor,
+                index
+            ) => {
+
+                const x =
+                    30 +
+                    index *
+                    (
+                        (ancho - 60) /
+                        Math.max(
+                            valores.length -
+                            1,
+                            1
+                        )
+                    );
+
+                const y =
+                    alto -
+                    30 -
+                    (
+                        valor /
+                        max
+                    ) *
+                    (
+                        alto -
+                        60
+                    );
+
+                return {
+                    x,
+                    y
+                };
+            }
+        );
+
+    ctx.lineWidth = 3;
+
+    ctx.strokeStyle =
+        "#2563eb";
+
+    ctx.beginPath();
+
+    puntos.forEach(
+        (
+            punto,
+            index
+        ) => {
+
+            if (
+                index === 0
+            ) {
+
+                ctx.moveTo(
+                    punto.x,
+                    punto.y
+                );
+
+            } else {
+
+                ctx.lineTo(
+                    punto.x,
+                    punto.y
+                );
+            }
+        }
+    );
+
+    ctx.stroke();
+
+    puntos.forEach(
+        punto => {
+
+            ctx.beginPath();
+
+            ctx.fillStyle =
+                "#2563eb";
+
+            ctx.arc(
+                punto.x,
+                punto.y,
+                5,
+                0,
+                Math.PI * 2
+            );
+
+            ctx.fill();
+        }
+    );
 }
 
 /* =========================================================
-   INICIO
+   INICIALIZACIÓN
    ========================================================= */
 
-document.addEventListener("DOMContentLoaded", () => {
+document.addEventListener(
+    "DOMContentLoaded",
+    async () => {
 
-    inicializarInventario();
+        iniciarLogin();
 
-    iniciarLogin();
-    iniciarNavegacion();
-    iniciarEmpleados();
-    iniciarEntregas();
-    iniciarReportes();
-    iniciarBusquedaGlobal();
-    iniciarNotificaciones();
+        iniciarNavegacion();
 
-    crearPanelInventario();
+        iniciarEmpleados();
 
-    cargarDashboard();
+        iniciarEntregas();
 
-    /* Botones que cambian a una sección */
-    document.querySelectorAll("[data-seccion]").forEach(boton => {
-        boton.addEventListener("click", () => {
-            const sidebar = document.querySelector(".sidebar");
+        iniciarInventario();
 
-            sidebar?.classList.remove("abierta");
-        });
-    });
-});
+        iniciarReportes();
 
-// Actualización automática cada 3 segundos
-setInterval(() => {
-  if (typeof cargarDashboard === 'function') {
-    cargarDashboard();
-  }
-  if (typeof renderEntregas === 'function') {
-    renderEntregas();
-  }
-}, 3000);
+        iniciarBusquedaGlobal();
+
+        iniciarNotificaciones();
+
+        crearPanelInventario();
+
+        /*
+           PRIMERO cargamos Supabase.
+           DESPUÉS pintamos la aplicación.
+        */
+
+        await cargarDashboard();
+
+        /*
+           Cerrar sidebar móvil
+        */
+
+        document
+            .querySelectorAll(
+                "[data-seccion]"
+            )
+            .forEach(
+                boton => {
+
+                    boton.addEventListener(
+                        "click",
+                        () => {
+
+                            document
+                                .querySelector(
+                                    ".sidebar"
+                                )
+                                ?.classList.remove(
+                                    "abierta"
+                                );
+                        }
+                    );
+                }
+            );
+    }
+);
+
+/* =========================================================
+   ACTUALIZACIÓN AUTOMÁTICA
+   =========================================================
+
+   Cada 10 segundos vuelve a consultar Supabase.
+   Así, si otro computador registra una entrega,
+   este dispositivo puede verla sin recargar manualmente.
+   ========================================================= */
+
+setInterval(
+    async () => {
+
+        if (
+            document.hidden
+        ) {
+            return;
+        }
+
+        await cargarDatosSupabase();
+
+        renderEmpleados();
+
+        renderDotacion();
+
+        renderInventario();
+
+        renderReportes();
+
+        renderNotificaciones();
+
+        actualizarResumenDotacion();
+
+        cargarEmpleadosSelect();
+
+        cargarElementosSelect();
+
+        actualizarGraficas();
+
+    },
+    10000
+);
