@@ -5,7 +5,7 @@
    ========================================================= */
 
 // CONFIGURACIÓN SUPABASE
-const SUPABASE_URL = "https://zqnjhqchnzqailpqlfvb.supabase.co";
+const SUPABASE_URL = "https://zqnjhqchnzqailpqlfvb.supabase.co"; 
 const SUPABASE_ANON_KEY = "sb_publishable_UteEe99FemnxY2udwsXUkw_nE61X1r7";
 
 const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
