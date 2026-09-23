@@ -15,7 +15,7 @@ const STORAGE = { sesion: "controlDotacion_sesion" };
 const STOCK_MINIMO = 5;
 
 let empleados = [];
-let entregas = [];
+let entregas = [];  
 let inventario = [];
 let historial = [];
 
