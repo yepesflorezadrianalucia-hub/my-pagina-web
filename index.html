@@ -598,7 +598,7 @@
   <!-- =========================================================
        SECCIÓN: LOGIN PROFESIONAL
        ========================================================= -->
-  <section class="login-profesional">
+  <section class="login-profesional" id="seccionLogin">
     <div class="decoracion-superior"></div>
     <div class="decoracion-inferior"></div>
 
@@ -668,5 +668,131 @@
     </div>
   </section>
 
+  <!-- =========================================================
+       SECCIÓN: DASHBOARD (PANEL DE CONTROL)
+       ========================================================= -->
+  <div class="dashboard oculto" id="seccionDashboard">
+    <!-- Sidebar -->
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-marca">
+        <div class="sidebar-logo">🛡️</div>
+        <div>
+          <strong>Control Dotación</strong>
+          <small>Panel Administrativo</small>
+        </div>
+      </div>
+
+      <div class="menu-titulo">MENÚ PRINCIPAL</div>
+      <button class="menu-item activo" data-modulo="resumen">
+        <span>📊</span> Resumen General
+      </button>
+      <button class="menu-item" data-modulo="empleados">
+        <span>👥</span> Colaboradores
+      </button>
+      <button class="menu-item" data-modulo="inventario">
+        <span>📦</span> Inventario
+      </button>
+      <button class="menu-item" data-modulo="reportes">
+        <span>📈</span> Reportes & Entregas
+      </button>
+
+      <div class="sidebar-inferior">
+        <button class="menu-item" id="btnCerrarSesion">
+          <span>🚪</span> Cerrar Sesión
+        </button>
+      </div>
+    </aside>
+
+    <!-- Área Principal de Contenido -->
+    <main class="contenido">
+      <header class="header-principal">
+        <div class="header-titulo">
+          <span class="saludo-pequeno">PANEL DE CONTROL</span>
+          <h1 id="tituloModulo">Resumen General</h1>
+        </div>
+        <div id="usuarioInfo">
+          <span id="correoUsuario"></span>
+        </div>
+      </header>
+
+      <!-- Módulo 1: Resumen -->
+      <section id="moduloResumen" class="modulo">
+        <div class="estadisticas-grid">
+          <div class="tarjeta-estadistica">
+            <span class="etiqueta-seccion">TOTAL EMPLEADOS</span>
+            <h2 id="statEmpleados">0</h2>
+          </div>
+          <div class="tarjeta-estadistica">
+            <span class="etiqueta-seccion">ITEMS EN INVENTARIO</span>
+            <h2 id="statInventario">0</h2>
+          </div>
+          <div class="tarjeta-estadistica">
+            <span class="etiqueta-seccion">ENTREGAS REALIZADAS</span>
+            <h2 id="statEntregas">0</h2>
+          </div>
+          <div class="tarjeta-estadistica">
+            <span class="etiqueta-seccion">ALERTAS STOCK BAJO</span>
+            <h2 id="statAlertas" style="color: var(--rojo);">0</h2>
+          </div>
+        </div>
+      </section>
+
+      <!-- Módulo 2: Empleados -->
+      <section id="moduloEmpleados" class="modulo oculto">
+        <div class="panel-tabla">
+          <h2>Listado de Colaboradores</h2>
+          <table id="tablaEmpleados">
+            <thead>
+              <tr>
+                <th>Documento</th>
+                <th>Nombre</th>
+                <th>Cargo</th>
+                <th>Área</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- Módulo 3: Inventario -->
+      <section id="moduloInventario" class="modulo oculto">
+        <div class="panel-tabla">
+          <h2>Stock de Dotación</h2>
+          <table id="tablaInventario">
+            <thead>
+              <tr>
+                <th>Item</th>
+                <th>Categoría</th>
+                <th>Talla</th>
+                <th>Stock</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- Módulo 4: Reportes -->
+      <section id="moduloReportes" class="modulo oculto">
+        <div class="panel-tabla">
+          <h2>Historial de Entregas</h2>
+          <table id="tablaReportes">
+            <thead>
+              <tr>
+                <th>Fecha</th>
+                <th>Empleado</th>
+                <th>Item</th>
+                <th>Cantidad</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script src="script.js"></script>
 </body>
 </html>
